@@ -467,15 +467,20 @@ function updateWSum(){
 }
 renderWeights();
 
-function validateForm(){
+async function validateForm(){
   const t = $("fToken").value.trim();
   if (!/^0x[a-fA-F0-9]{40}$/.test(t)) throw new Error("项目代币地址格式不正确");
+  if (t.toLowerCase() === walletAddr.toLowerCase()) throw new Error("项目代币不能填自己的钱包地址，请填代币合约地址");
   const total = Number($("fTotal").value);
   if (!(total >= 1 && total <= 10000)) throw new Error("盲盒总量需在 1~10000 之间");
   const price = Number($("fPrice").value);
   if (!(price > 0)) throw new Error("单价需大于 0");
   const ws = [...Array(8)].map((_, i) => Math.max(0, Number($("w"+i).value) || 0));
   if (ws.some(w => w === 0)) throw new Error("每个部件权重需 ≥ 1");
+  try {
+    const code = await provider.getCode(t);
+    if (!code || code === "0x") throw new Error("该地址不是合约（无代码），请粘贴代币合约地址");
+  } catch(e) { if (e.message && e.message.includes("不是合约")) throw e; }
   return { token: t, total, price, ws, dec: Number($("fDec").value) || 18, openMax: Number($("fOpenMax").value) || 100 };
 }
 
@@ -507,7 +512,7 @@ async function deployProject(){
   if (!walletAddr) { toast("请先连接钱包", "err"); return; }
   if (!chainIdOk) { toast("请先切换到 X Layer 网络", "err"); return; }
   let cfg;
-  try { cfg = validateForm(); } catch(e) { toast(e.message, "err"); return; }
+  try { cfg = await validateForm(); } catch(e) { toast(e.message, "err"); return; }
   const btn = $("btnDeploy");
   btn.disabled = true; btn.textContent = "部署中…";
 
