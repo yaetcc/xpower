@@ -31,7 +31,7 @@
 ## 目录结构
 
 ```
-XPower DApp.html            # 前端单文件（自包含，ethers 走 CDN）
+index.html                  # 前端单文件（自包含，ethers 走 CDN）
 contracts/
   XPower.sol                # 6 合约 + ERC1967Proxy + UUPSBase 单文件源码
   compile.js                # 本地编译脚本（node compile.js → out/）
