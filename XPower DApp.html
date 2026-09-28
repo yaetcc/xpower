@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0e14'/%3E%3Cpath d='M36 8 L20 36 h10 L26 56 L46 26 h-12 z' fill='%2322d3ee'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XPower · 三币闭环 DApp 发射台</title>
+<style>
+:root{
+  --bg:#0a0e14; --bg2:#10161f; --card:#121a26; --card2:#0e1520;
+  --line:#1e2a3a; --txt:#e8eef7; --dim:#8fa3ba; --faint:#5c7190;
+  --acc:#22d3ee; --acc2:#38bdf8; --gold:#fbbf24; --red:#f87171; --green:#4ade80;
+  --purple:#a78bfa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh;overflow-x:hidden}
+a{color:var(--acc);text-decoration:none}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font:inherit;color:var(--txt);background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+::placeholder{color:var(--faint)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.hide{display:none!important}
+/* ===== 顶栏 ===== */
+header{position:sticky;top:0;z-index:50;background:rgba(10,14,20,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:4px;padding:8px 14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:.5px;margin-right:8px}
+.logo .bolt{color:var(--acc);font-size:18px}
+.nav-item{padding:6px 12px;border-radius:8px;color:var(--dim);font-weight:500;white-space:nowrap}
+.nav-item:hover{color:var(--txt);background:var(--bg2)}
+.nav-item.on{color:var(--acc);background:rgba(34,211,238,.08)}
+.nav-spacer{flex:1}
+.wbtn{padding:6px 12px;border-radius:8px;border:1px solid var(--line);color:var(--txt);background:var(--bg2);font-weight:500}
+.wbtn.on{background:linear-gradient(135deg,rgba(34,211,238,.18),rgba(167,139,250,.18));border-color:rgba(34,211,238,.5)}
+.addr-chip{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--acc)}
+/* ===== 主容器 ===== */
+main{max-width:1000px;margin:0 auto;padding:18px 14px 60px}
+.view{display:none}
+.view.on{display:block;animation:vin .25s ease}
+@keyframes vin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* ===== 通用元素 ===== */
+h1{font-size:22px;font-weight:800;letter-spacing:.3px}
+h2{font-size:16px;font-weight:700;margin-bottom:10px}
+.sub{color:var(--dim);font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;font-weight:600;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#04222b;border:none;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.gold{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#3b2300}
+.btn.ghost{background:var(--bg2);color:var(--txt);border:1px solid var(--line)}
+.btn.danger{background:linear-gradient(135deg,#f87171,#ef4444);color:#3b0a0a}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+.btn.purple{background:linear-gradient(135deg,#a78bfa,#8b5cf6);color:#1d1038}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:720px){.grid3{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--dim);margin-bottom:5px;font-weight:500}
+.field .hint{font-size:11px;color:var(--faint);margin-top:3px}
+/* ===== 状态条 ===== */
+.statbar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.stat{padding:10px 14px;border-radius:10px;background:var(--card);border:1px solid var(--line);min-width:120px}
+.stat .k{font-size:11px;color:var(--dim)}
+.stat .v{font-size:18px;font-weight:800;color:var(--gold)}
+.stat .v.g{color:var(--green)} .stat .v.c{color:var(--acc)}
+/* ===== 项目卡片 ===== */
+.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.pcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;transition:border-color .15s,transform .15s;position:relative;overflow:hidden}
+.pcard:hover{border-color:var(--acc);transform:translateY(-2px)}
+.pcard .pname{font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.pcard .pmeta{font-size:12px;color:var(--dim);margin:2px 0}
+.pcard .paddr{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--faint);word-break:break-all}
+.pcard .pstat{margin-top:8px;display:flex;gap:8px;font-size:11px}
+.pill{padding:2px 8px;border-radius:20px;background:var(--bg2);color:var(--dim);border:1px solid var(--line)}
+.pill.g{color:var(--green);border-color:rgba(74,222,128,.3)}
+.pill.c{color:var(--acc);border-color:rgba(34,211,238,.3)}
+/* ===== 部件 ===== */
+.ptype{display:inline-block;width:24px;height:24px;border-radius:7px;text-align:center;line-height:24px;font-size:12px;font-weight:700;color:#04222b}
+.pt0{background:linear-gradient(135deg,#22d3ee,#38bdf8)}
+.pt1{background:linear-gradient(135deg,#fbbf24,#f59e0b)}
+.pt2{background:linear-gradient(135deg,#4ade80,#22c55e)}
+.pt3{background:linear-gradient(135deg,#a78bfa,#8b5cf6)}
+.pt4{background:linear-gradient(135deg,#f87171,#ef4444)}
+.pt5{background:linear-gradient(135deg,#f472b6,#ec4899)}
+.pt6{background:linear-gradient(135deg,#facc15,#f59e0b)}
+.pt7{background:linear-gradient(135deg,#94a3b8,#64748b)}
+.parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.part-item{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;display:flex;align-items:center;gap:8px}
+.part-item .nm{flex:1;color:var(--dim)}
+.part-item .qty{font-weight:700;color:var(--gold)}
+/* ===== PC 列表 ===== */
+.pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.pc-item{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12px}
+.pc-item .pid{font-family:ui-monospace,Menlo,monospace;color:var(--acc);font-size:11px}
+.pc-item .line{display:flex;justify-content:space-between;margin:3px 0;color:var(--dim)}
+.pc-item .line b{color:var(--txt)}
+/* ===== 队列面板 ===== */
+.qpanel{position:fixed;bottom:14px;right:14px;width:340px;max-width:calc(100vw - 28px);background:var(--card2);border:1px solid var(--line);border-radius:14px;z-index:99;box-shadow:0 12px 40px rgba(0,0,0,.5);overflow:hidden}
+.qpanel .qh{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);font-weight:700;font-size:13px}
+.qpanel .qh .dot{width:8px;height:8px;border-radius:50%;background:var(--acc);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.qpanel .qb{padding:10px 14px;max-height:300px;overflow-y:auto}
+.qstep{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-bottom:1px dashed rgba(30,42,58,.6)}
+.qstep:last-child{border:none}
+.qstep .st{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);text-align:center;line-height:20px;font-size:11px;flex:none}
+.qstep.done .st{background:var(--green);border-color:var(--green);color:#04222b}
+.qstep.err .st{background:var(--red);border-color:var(--red);color:#3b0a0a}
+.qstep.run .st{border-color:var(--acc);color:var(--acc);animation:pulse 1s infinite}
+.qstep .tl{flex:1;color:var(--dim);word-break:break-all}
+.qstep.done .tl{color:var(--txt)}
+.qstep.err .tl{color:var(--red)}
+.qpanel .qf{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line)}
+/* ===== 弹窗 ===== */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:120;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:14px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto;padding:20px;animation:pop .18s ease}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+.modal h3{font-size:16px;margin-bottom:12px}
+/* ===== Toast ===== */
+#toasts{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;padding:10px 16px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.5);animation:vin .2s ease;max-width:90vw}
+.toast.err{border-left-color:var(--red)}
+.toast.ok{border-left-color:var(--green)}
+/* ===== 市场 ===== */
+.orders{display:flex;flex-direction:column;gap:8px}
+.order{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;flex-wrap:wrap}
+.order .ob{flex:1;min-width:120px}
+.order .price{color:var(--gold);font-weight:700}
+.order .qty{color:var(--acc);font-weight:600}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{padding:6px 12px;border-radius:8px;background:var(--bg2);border:1px solid var(--line);color:var(--dim);font-weight:500}
+.tab.on{color:var(--acc);border-color:rgba(34,211,238,.5);background:rgba(34,211,238,.08)}
+/* ===== 盲盒 ===== */
+.box-hero{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media(max-width:720px){.box-hero{grid-template-columns:1fr}}
+.cover{aspect-ratio:1;border-radius:16px;background:radial-gradient(120% 120% at 30% 20%,#16263a,#0b1118 60%);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cover img{width:100%;height:100%;object-fit:cover}
+.cover .noimg{font-size:60px;color:var(--faint);filter:drop-shadow(0 4px 12px rgba(34,211,238,.3))}
+.mono{font-family:ui-monospace,Menlo,monospace;word-break:break-all}
+.copyable{cursor:pointer;border-bottom:1px dashed var(--line)}
+.copyable:hover{color:var(--acc)}
+/* 权重 */
+.wrow{display:grid;grid-template-columns:24px 1fr 80px;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
+.wrow input{text-align:right}
+.wsum{font-size:12px;color:var(--dim);margin-top:6px}
+/* 空态 */
+.empty{text-align:center;padding:40px 10px;color:var(--faint)}
+.empty .big{font-size:34px;margin-bottom:8px;opacity:.6}
+/* 统计行 */
+.kv{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px dashed rgba(30,42,58,.5)}
+.kv .k{color:var(--dim)} .kv .v{font-weight:600;color:var(--gold)}
+footer{max-width:1000px;margin:0 auto;padding:18px 14px;color:var(--faint);font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <div class="nav">
+    <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="display:inline-block;vertical-align:-3px"><path d="M13 2 L4.5 13.5 H10.5 L9 22 L19.5 10 H13.5 Z" fill="#22d3ee"/></svg> XPower</div>
+    <button class="nav-item" data-v="create">发射台</button>
+    <button class="nav-item" data-v="boxes">项目列表</button>
+    <button class="nav-item" data-v="assets">我的资产</button>
+    <div class="nav-spacer"></div>
+    <button class="wbtn" id="walletBtn">连接钱包</button>
+  </div>
+</header>
+
+<div id="toasts"></div>
+<main>
+  <!-- ===== 视图：发射台 ===== -->
+  <section class="view" id="view-create">
+    <h1>CREATE YOUR PROJECT</h1>
+    <p class="sub" style="margin-bottom:16px">三币闭环 DApp 发射台 · 填入资料一键部署，自动生成你的盲盒项目（开盒 · 组装 · 质押挖矿 · 领取 · 市场）</p>
+    <div class="card" style="margin-bottom:14px">
+      <h2>① 项目代币（IGNIX 发币后粘贴合约地址）</h2>
+      <div class="field">
+        <label>项目代币合约地址（盲盒抽卡消耗 · 质押挖矿产出）</label>
+        <input id="fToken" placeholder="0x…" style="width:100%">
+        <div class="hint">90% 抽卡消耗进分红池，10% 进你的钱包；质押 PC 按算力份额领取分红池</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>② 盲盒配置</h2>
+      <div class="grid2">
+        <div class="field"><label>盲盒总量（≤ 10000）</label><input id="fTotal" type="number" value="10000" min="1" max="10000"></div>
+        <div class="field"><label>单价（项目代币，建议 0.01 起）</label><input id="fPrice" type="number" value="0.01" step="0.0001" min="0"></div>
+        <div class="field"><label>单次开盒上限（建议 100）</label><input id="fOpenMax" type="number" value="100" min="1" max="500"></div>
+        <div class="field"><label>项目代币精度 decimals（默认 18）</label><input id="fDec" type="number" value="18" min="0" max="18"></div>
+      </div>
+      <div class="field">
+        <label>8 类部件权重（开盒随机抽取比例，总和自动归一化）</label>
+        <div id="weightRows"></div>
+        <div class="wsum">权重总和：<b id="wSum">0</b>（平均 = 8×1）</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>③ 组装 / 挖矿参数（平台固定）</h2>
+      <div class="grid3">
+        <div class="stat"><div class="k">组装消耗</div><div class="v">10 XPR</div></div>
+        <div class="stat"><div class="k">组装费去向</div><div class="v c" style="font-size:11px">平台地址</div></div>
+        <div class="stat"><div class="k">挖矿周期</div><div class="v g">6 小时</div></div>
+      </div>
+      <div class="field" style="margin-top:10px"><label>XPR（平台币）合约</label><input id="fXpr" value="0xFa24321d8f37B588a4f76FC18795Bcd441DCeEEe" style="width:100%" readonly></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div>
+          <div class="sub">一键部署：复用官方 Factory + 创建项目（只需 1 笔签名）</div>
+          <div class="sub" style="margin-top:4px">部署费用：仅 1 笔交易 · 用 OKB 支付 Gas · 部署后自动跳转项目页</div>
+        </div>
+        <button class="btn" id="btnDeploy" style="font-size:15px;padding:12px 22px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:inline-block;vertical-align:-2px"><path d="M13 2 L4.5 13.5 H10.5 L9 22 L19.5 10 H13.5 Z" fill="currentColor"/></svg> 一键部署</button>
+      </div>
+      <div id="deployInfo" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ===== 视图：项目列表 ===== -->
+  <section class="view" id="view-boxes">
+    <h1>项目列表</h1>
+    <p class="sub" style="margin-bottom:14px">所有已发射的盲盒项目 · 点击进入项目页（开盒 / 组装 / 质押 / 领取 / 市场）</p>
+    <div id="boxList"></div>
+  </section>
+
+  <!-- ===== 视图：我的资产 ===== -->
+  <section class="view" id="view-assets">
+    <h1>我的资产</h1>
+    <div id="assetsTabs" style="margin-top:12px"></div>
+    <div id="assetsBody" style="margin-top:10px"></div>
+  </section>
+
+  <!-- ===== 视图：项目详情 ===== -->
+  <section class="view" id="view-project">
+    <div id="projectBody"></div>
+  </section>
+</main>
+<footer>XPower · X Layer · 三币闭环 DApp 发射台</footer>
+
+<!-- 队列执行器 -->
+<div class="qpanel hide" id="qpanel">
+  <div class="qh"><span class="dot"></span><span>部署队列</span><span style="flex:1"></span><button class="btn ghost sm" id="qCollapse">收起</button></div>
+  <div class="qb" id="qbody"></div>
+  <div class="qf">
+    <button class="btn danger sm" id="qStop">终止后续</button>
+    <button class="btn sm" id="qRetry">重试失败项</button>
+  </div>
+</div>
+
+<!-- ABI 同源数据（由编译产物注入） -->
+<script>
+window.XP4_ABI = {"XPowerParts":[{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"","type":"address"},{"indexed":false,"internalType":"address","name":"","type":"address"},{"indexed":false,"internalType":"address","name":"","type":"address"},{"indexed":false,"internalType":"uint256","name":"","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"","type":"uint256"}],"name":"TransferSingle","type":"event"},{"inputs":[{"internalType":"address","name":"m","type":"address"}],"name":"addMinter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"address","name":"","type":"address"}],"name":"bal","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"a","type":"address"},{"internalType":"uint256","name":"t","type":"uint256"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"aa","type":"address[]"},{"internalType":"uint256[]","name":"tt","type":"uint256[]"}],"name":"balanceOfBatch","outputs":[{"internalType":"uint256[]","name":"r","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"uint256","name":"t","type":"uint256"},{"internalType":"uint256","name":"amt","type":"uint256"}],"name":"burn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"implementation","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"isAppr","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"a","type":"address"},{"internalType":"address","name":"o","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"t","type":"uint256"},{"internalType":"uint256","name":"amt","type":"uint256"}],"name":"mint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"minters","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"m","type":"address"}],"name":"removeMinter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"o","type":"address"},{"internalType":"bool","name":"v","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"nx","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImpl","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"}],"XPowerCircuit":[{"inputs":[],"name":"ASSEMBLE_FEE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PLAT","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"assemble","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint8","name":"tier","type":"uint8"}],"name":"assembleWithTier","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"n","type":"uint256"}],"name":"batchAssemble","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"n","type":"uint256"},{"internalType":"uint8","name":"tier","type":"uint8"}],"name":"batchAssembleTier","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"creator","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"implementation","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"xpwr_","type":"address"},{"internalType":"address","name":"parts_","type":"address"},{"internalType":"address","name":"creator_","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"a","type":"address"},{"internalType":"uint256","name":"id","type":"uint256"}],"name":"isOwner","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lastId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"market","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"ownerPCs","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"parts","outputs":[{"internalType":"contract XPowerParts","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"pcs","outputs":[{"internalType":"uint8","name":"tier","type":"uint8"},{"internalType":"uint32","name":"hashRate","type":"uint32"},{"internalType":"bool","name":"staked","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"a","type":"address"}],"name":"pcsOfOwner","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"poolAddr","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"m","type":"address"}],"name":"setMarket","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"p","type":"address"}],"name":"setPoolAddr","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"bool","name":"v","type":"bool"}],"name":"setStaked","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"nx","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"id","type":"uint256"}],"name":"transferPC","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImpl","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"xpwr","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"}],"XPowerMining":[{"inputs":[],"name":"EPOCH","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256[]","name":"ids","type":"uint256[]"}],"name":"batchStake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256[]","name":"ids","type":"uint256[]"}],"name":"batchUnstake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"circ","outputs":[{"internalType":"contract XPowerCircuit","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256[]","name":"ids","type":"uint256[]"}],"name":"claim","outputs":[{"internalType":"uint256","name":"tot","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"}],"name":"earned","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"implementation","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"token_","type":"address"},{"internalType":"address","name":"circ_","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"reward","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"}],"name":"stake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakeHash","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakeTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakedPCs","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"a","type":"address"}],"name":"stakedPCsOf","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"nx","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImpl","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"}],"XPowerBox":[{"inputs":[],"name":"MAX_OPEN","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"boxCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"boxes","outputs":[{"internalType":"address","name":"creator","type":"address"},{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"uint256","name":"total","type":"uint256"},{"internalType":"uint256","name":"sold","type":"uint256"},{"internalType":"bool","name":"closed","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"}],"name":"closeBox","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"total","type":"uint256"},{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"uint256[8]","name":"w","type":"uint256[8]"}],"name":"createBox","outputs":[{"internalType":"uint256","name":"id","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"implementation","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"token_","type":"address"},{"internalType":"address","name":"parts_","type":"address"},{"internalType":"address","name":"pool_","type":"address"},{"internalType":"uint256","name":"maxOpen_","type":"uint256"},{"internalType":"uint256","name":"total_","type":"uint256"},{"internalType":"uint256","name":"price_","type":"uint256"},{"internalType":"uint256[8]","name":"w_","type":"uint256[8]"},{"internalType":"address","name":"creator_","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"uint256","name":"n","type":"uint256"}],"name":"openBox","outputs":[{"internalType":"uint256[]","name":"r","type":"uint256[]"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"parts","outputs":[{"internalType":"contract XPowerParts","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"payToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"poolAddr","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"address","name":"c","type":"address"}],"name":"setCreator","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"nx","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImpl","type":"address"}],"name":"upgradeTo","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"newImpl","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"}],"XPowerMarket":[{"inputs":[{"internalType":"uint256[]","name":"oids","type":"uint256[]"}],"name":"batchCancel","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256[]","name":"ids","type":"uint256[]"},{"internalType":"uint256[]","name":"prices","type":"uint256[]"}],"name":"batchSellPCs","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256[]","name":"ts","type":"uint256[]"},{"internalType":"uint256[]","name":"qtys","type":"uint256[]"},{"internalType":"uint256[]","name":"prices","type":"uint256[]"}],"name":"batchSellParts","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"oid","type":"uint256"}],"name":"buy","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"oid","type":"uint256"}],"name":"cancel","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"circ","outputs":[{"internalType":"contract XPowerCircuit","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"implementation","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"token_","type":"address"},{"internalType":"address","name":"parts_","type":"address"},{"internalType":"address","name":"circ_","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"orderCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"orders","outputs":[{"internalType":"address","name":"seller","type":"address"},{"internalType":"uint8","name":"kind","type":"uint8"},{"internalType":"uint256","name":"sub","type":"uint256"},{"internalType":"uint256","name":"qty","type":"uint256"},{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"bool","name":"active","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"parts","outputs":[{"internalType":"contract XPowerParts","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"payToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"uint256","name":"price","type":"uint256"}],"name":"sellPC","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"t","type":"uint256"},{"internalType":"uint256","name":"qty","type":"uint256"},{"internalType":"uint256","name":"price","type":"uint256"}],"name":"sellPart","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"nx","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newImpl","type":"address"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"upgradeToAndCall","outputs":[],"stateMutability":"payable","type":"function"}],"XPowerFactory":[{"inputs":[{"internalType":"address[]","name":"impls","type":"address[]"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"creator","type":"address"},{"indexed":false,"internalType":"address","name":"parts","type":"address"},{"indexed":false,"internalType":"address","name":"circuit","type":"address"},{"indexed":false,"internalType":"address","name":"mining","type":"address"},{"indexed":false,"internalType":"address","name":"box","type":"address"},{"indexed":false,"internalType":"address","name":"market","type":"address"}],"name":"ProjectDeployed","type":"event"},{"inputs":[],"name":"boxImpl","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"circuitImpl","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"token_","type":"address"},{"internalType":"address","name":"xpr_","type":"address"},{"internalType":"address","name":"creator_","type":"address"},{"internalType":"uint256","name":"openMax_","type":"uint256"},{"internalType":"uint256","name":"total_","type":"uint256"},{"internalType":"uint256","name":"price_","type":"uint256"},{"internalType":"uint256[8]","name":"w_","type":"uint256[8]"}],"name":"deployProject","outputs":[{"internalType":"address","name":"parts_","type":"address"},{"internalType":"address","name":"circuit_","type":"address"},{"internalType":"address","name":"mining_","type":"address"},{"internalType":"address","name":"box_","type":"address"},{"internalType":"address","name":"market_","type":"address"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getLastProject","outputs":[{"internalType":"address[5]","name":"","type":"address[5]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"lastProject","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"marketImpl","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"miningImpl","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"partsImpl","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"impls","type":"address[]"}],"name":"setImpls","outputs":[],"stateMutability":"nonpayable","type":"function"}]};
+</script>
+<script>
+"use strict";
+/* ============================================================
+   XPower v4 前端
+   常量 / RPC 容错层 / 钱包层 / 工具
+============================================================ */
+const CHAIN_ID = 196;
+const XPWR = "0xFa24321d8f37B588a4f76FC18795Bcd441DCeEEe";
+const PLAT = "0x594C2C32cB60a0d93F0Ce1CC9f6088709B50aDDC";
+const EXPLORER = "https://web3.okx.com/zh-hans/explorer/x-layer/evm/address/";
+const RPCS = [
+  "https://rpc.xlayer.tech",
+  "https://xlayer.drpc.org",
+  "https://x-layer.drpc.org",
+  "https://xlayerscan.io/rpc"
+];
+const PARTS_NAMES = ["CPU","显卡","内存","主板","电源","硬盘","机箱","散热"];
+const PARTS_ICONS = ["C","G","M","B","P","D","K","S"];
+const ABI = window.XP4_ABI;
+const ABI6 = JSON.parse(JSON.stringify(window.XP4_ABI));
+ABI6.XPowerBox.find(f => f.name === "boxes").outputs.push({ internalType: "uint256[8]", name: "weights", type: "uint256[8]" });
+async function readBox(boxC, id) {
+  try { return await boxC.boxes(id); }
+  catch (e) {
+    const b6 = new ethers.Contract(boxC.target || boxC.address, ABI6.XPowerBox, provider);
+    return await b6.boxes(id);
+  }
+}
+
+let rpcIdx = 0, provider = null, walletAddr = null, chainIdOk = false;
+let userProjects = JSON.parse(localStorage.getItem("xp4_projects") || "[]");
+let pending = null; // 队列状态
+
+/* ---------- RPC 容错层：超时→换 RPC→重试 ---------- */
+function pickProvider(){
+  if (window.ethereum) {
+    try { return new ethers.BrowserProvider(window.ethereum); } catch(e){}
+  }
+  return new ethers.JsonRpcProvider(RPCS[0], CHAIN_ID, { staticNetwork: true });
+}
+function withRPC(fn){
+  const maxTries = 3;
+  return new Promise((resolve, reject) => {
+    const attempt = (tryN) => {
+      const t0 = Date.now();
+      Promise.race([
+        fn(rpcIdx),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("RPC timeout")), 12000))
+      ]).then(resolve).catch(err => {
+        if (tryN >= maxTries) return reject(err);
+        rpcIdx = (rpcIdx + 1) % RPCS.length;
+        console.warn("RPC fail, switch →", RPCS[rpcIdx], err.message);
+        attempt(tryN + 1);
+      });
+    };
+    attempt(0);
+  });
+}
+function jsonRpc(method, params){
+  return withRPC(i => fetch(RPCS[i], {
+    method:"POST", headers:{"content-type":"application/json"},
+    body: JSON.stringify({ jsonrpc:"2.0", id:1, method, params })
+  }).then(r => r.json()).then(j => {
+    if (j.error) throw new Error(j.error.message || "RPC error");
+    return j.result;
+  }));
+}
+function getProvider(){ return withRPC(i => Promise.resolve(new ethers.JsonRpcProvider(RPCS[i], CHAIN_ID, { staticNetwork: true }))); }
+
+/* ---------- 通用工具 ---------- */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmt(n, dec=4){ 
+  if (n === null || n === undefined || isNaN(n)) return "—";
+  const s = Number(n);
+  if (s >= 1e6) return (s/1e6).toFixed(2)+"M";
+  if (s >= 1e4) return (s/1e3).toFixed(1)+"k";
+  return s.toLocaleString("en-US", {maximumFractionDigits: dec});
+}
+function shortAddr(a){ if(!a) return "—"; return a.slice(0,6)+"…"+a.slice(-4); }
+function toWei(v, d=18){ return ethers.parseUnits(String(v), d); }
+function fromWei(b, d=18){ try { return Number(ethers.formatUnits(b, d)); } catch(e){ return Number(b)/10**d; } }
+function toast(msg, type){
+  const t = document.createElement("div");
+  t.className = "toast" + (type==="err" ? " err" : type==="ok" ? " ok" : "");
+  t.textContent = msg;
+  $("toasts").appendChild(t);
+  setTimeout(() => t.remove(), type==="err" ? 6000 : 3500);
+}
+function copyText(t){
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast("已复制", "ok"));
+  else { const ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast("已复制", "ok"); }
+}
+async function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+/* ---------- 钱包 ---------- */
+async function connectWallet(){
+  if (!window.ethereum) { toast("未检测到钱包（OKX Web3 钱包请在 https 环境使用）", "err"); return; }
+  try {
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    walletAddr = accounts[0];
+    const chain = await window.ethereum.request({ method: "eth_chainId" });
+    chainIdOk = (parseInt(chain,16) === CHAIN_ID);
+    if (!chainIdOk) {
+      try { await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0xc4" }] }); chainIdOk = true; }
+      catch(e){ if (e.code === 4902) { toast("请手动切换到 X Layer 网络", "err"); } }
+    }
+    refreshWalletUI();
+    if (chainIdOk) loadAssets();
+  } catch(e) { toast("连接失败：" + e.message, "err"); }
+}
+window.ethereum && window.ethereum.on && window.ethereum.on("accountsChanged", (acc) => { walletAddr = acc[0] || null; refreshWalletUI(); if(walletAddr) loadAssets(); });
+window.ethereum && window.ethereum.on && window.ethereum.on("chainChanged", () => { chainIdOk = false; connectWallet(); });
+function refreshWalletUI(){
+  const b = $("walletBtn");
+  if (walletAddr) { b.textContent = shortAddr(walletAddr); b.classList.add("on"); }
+  else { b.textContent = "连接钱包"; b.classList.remove("on"); }
+}
+$("walletBtn").onclick = connectWallet;
+
+/* ---------- 导航 ---------- */
+function go(v){
+  document.querySelectorAll(".view").forEach(x => x.classList.remove("on"));
+  const viewName = v.startsWith("p/") ? "project" : v.split("/")[0];
+  const vw = $("view-" + viewName);
+  if (vw) vw.classList.add("on");
+  document.querySelectorAll(".nav-item").forEach(x => x.classList.toggle("on", x.dataset.v === v.split("/")[0]));
+  window.location.hash = v;
+  if (v === "boxes") loadProjects();
+  if (v === "assets" && walletAddr) loadAssets();
+  if (v.startsWith("p/")) loadProject(v.slice(2));
+}
+document.querySelectorAll(".nav-item").forEach(b => b.onclick = () => go(b.dataset.v));
+function route(){
+  const h = (window.location.hash || "#create").replace("#","");
+  const v = h.split("/")[0];
+  if (h.startsWith("p/")) { const addr = h.slice(2); document.querySelectorAll(".view").forEach(x=>x.classList.remove("on")); const vw = $("view-project"); if (vw) vw.classList.add("on"); document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("on",false)); loadProject(addr); }
+  else go(v);
+}
+window.addEventListener("hashchange", route);
+
+/* ---------- 队列执行器 ---------- */
+const qstate = { steps: [], running: false, stopped: false, idx: 0 };
+function qShow(){ $("qpanel").classList.remove("hide"); }
+function qRender(){
+  const b = $("qbody");
+  b.innerHTML = qstate.steps.map((s, i) => {
+    const st = s.status === "done" ? "done" : s.status === "err" ? "err" : (qstate.running && i === qstate.idx) ? "run" : "";
+    return `<div class="qstep ${st}"><div class="st">${s.status==="done"?"✓":s.status==="err"?"✕":i+1}</div><div class="tl">${esc(s.label)}${s.extra?"<br><span style='font-size:10px;color:var(--faint)'>"+esc(s.extra)+"</span>":""}</div></div>`;
+  }).join("");
+}
+function qAdd(label, fn){
+  qstate.steps.push({ label, status: "wait", fn });
+}
+async function qRun(){
+  if (qstate.running) return;
+  qstate.running = true; qstate.stopped = false; qstate.idx = 0;
+  qShow(); qRender();
+  for (let i = 0; i < qstate.steps.length; i++) {
+    if (qstate.stopped) break;
+    qstate.idx = i;
+    const s = qstate.steps[i];
+    s.status = "run"; s.extra = ""; qRender();
+    try {
+      const r = await s.fn();
+      s.status = "done"; s.extra = r || "";
+    } catch(e) {
+      s.status = "err"; s.extra = e.message || "失败"; qRender();
+      toast("第 " + (i+1) + " 步失败：" + (e.message || "未知错误"), "err");
+    }
+    qRender();
+  }
+  qstate.running = false;
+  const failed = qstate.steps.some(s => s.status === "err");
+  const done = qstate.steps.filter(s => s.status === "done").length;
+  toast(failed ? `队列完成，${done}/${qstate.steps.length} 成功` : `队列完成 ${done}/${qstate.steps.length} 全部成功`, failed ? "err" : "ok");
+  qRender();
+}
+$("qStop").onclick = () => { qstate.stopped = true; toast("已终止后续任务"); };
+$("qRetry").onclick = () => { const fails = qstate.steps.filter(s => s.status === "err"); qstate.steps = qstate.steps.map(s => s.status === "err" ? { ...s, status: "wait" } : s); qRun(); };
+$("qCollapse").onclick = () => $("qpanel").classList.add("hide");
+
+/* ---------- 链上调用封装（显式 from + 队列） ---------- */
+async function signTx(contract, method, args, opts={}){
+  if (!walletAddr) throw new Error("请先连接钱包");
+  if (!chainIdOk) throw new Error("请切换到 X Layer 网络");
+  const signer = await provider.getSigner();
+  const est = await contract[method].estimateGas(...args, { from: walletAddr, ...opts });
+  const tx = await contract[method](...args, { from: walletAddr, gasLimit: BigInt(Math.ceil(Number(est) * 1.4)), ...opts });
+  await tx.wait();
+  return tx.hash;
+}
+async function waitTx(hash){
+  const p = await getProvider();
+  await p.waitForTransaction(hash);
+  return hash;
+}
+
+/* ============================================================
+   发射台 · 权重 + 一键部署
+============================================================ */
+function renderWeights(){
+  const rows = $("weightRows");
+  rows.innerHTML = PARTS_NAMES.map((nm, i) => `
+    <div class="wrow">
+      <span class="ptype pt${i}">${PARTS_ICONS[i]}</span>
+      <span>${nm}</span>
+      <input id="w${i}" type="number" min="0" max="1000" value="1" oninput="updateWSum()">
+    </div>`).join("");
+  updateWSum();
+}
+function updateWSum(){
+  const ws = [...Array(8)].map((_, i) => Math.max(0, Number($("w"+i).value) || 0));
+  $("wSum").textContent = ws.reduce((a, b) => a + b, 0);
+}
+renderWeights();
+
+function validateForm(){
+  const t = $("fToken").value.trim();
+  if (!/^0x[a-fA-F0-9]{40}$/.test(t)) throw new Error("项目代币地址格式不正确");
+  const total = Number($("fTotal").value);
+  if (!(total >= 1 && total <= 10000)) throw new Error("盲盒总量需在 1~10000 之间");
+  const price = Number($("fPrice").value);
+  if (!(price > 0)) throw new Error("单价需大于 0");
+  const ws = [...Array(8)].map((_, i) => Math.max(0, Number($("w"+i).value) || 0));
+  if (ws.some(w => w === 0)) throw new Error("每个部件权重需 ≥ 1");
+  return { token: t, total, price, ws, dec: Number($("fDec").value) || 18, openMax: Number($("fOpenMax").value) || 100 };
+}
+
+async function fixBox(){
+  if (!walletAddr) { toast("请先连接钱包", "err"); return; }
+  if (!chainIdOk) { toast("请先切换到 X Layer 网络", "err"); return; }
+  const box = new ethers.Contract(projectMeta.box, ABI.XPowerBox, await provider.getSigner());
+  const own = await box.owner();
+  if (own.toLowerCase() !== walletAddr.toLowerCase()) { toast("仅项目创建者（合约 Owner）可修复", "err"); return; }
+  provider = pickProvider();
+  qstate.steps = [];
+  if (qstate.newImpl) { toast("复用已部署实现 " + shortAddr(qstate.newImpl)); }
+  if (!qstate.newImpl) qAdd("部署新版盲盒实现", async () => {
+    const factory = new ethers.ContractFactory(ABI.XPowerBox, ABI_BC.XPowerBox, await provider.getSigner());
+    const c = await factory.deploy();
+    await c.waitForDeployment();
+    qstate.newImpl = await c.getAddress();
+    return shortAddr(qstate.newImpl);
+  });
+  qAdd("升级盲盒合约", async () => {
+    const b2 = new ethers.Contract(projectMeta.box, ABI.XPowerBox, await provider.getSigner());
+    const tx = await b2.upgradeTo(qstate.newImpl);
+    await tx.wait();
+    return "升级完成，可正常开盒";
+  });
+  await qRun();
+}
+async function deployProject(){
+  if (!walletAddr) { toast("请先连接钱包", "err"); return; }
+  if (!chainIdOk) { toast("请先切换到 X Layer 网络", "err"); return; }
+  let cfg;
+  try { cfg = validateForm(); } catch(e) { toast(e.message, "err"); return; }
+  const btn = $("btnDeploy");
+  btn.disabled = true; btn.textContent = "部署中…";
+
+  provider = pickProvider();
+  qstate.steps = [];
+  const IMPL = { XPowerParts: "XPowerParts", XPowerCircuit: "XPowerCircuit", XPowerMining: "XPowerMining", XPowerBox: "XPowerBox", XPowerMarket: "XPowerMarket" };
+  const implAddrs = {};
+  const BUILTIN_FACTORY = "0x1b1E7D8c3f1f7D0cd5AC4E77d267f10Ae1DFcbD3";
+  const cachedF = JSON.parse(localStorage.getItem("xp4_factory") || "null");
+  const useF = (cachedF && cachedF.factory) ? cachedF.factory : BUILTIN_FACTORY;
+
+  if (useF) {
+    factoryAddr = useF;
+    toast("复用官方 Factory，本次只需 1 笔签名");
+  } else {
+    for (const [name, key] of Object.entries(IMPL)) {
+      qAdd("部署 " + name + " 实现", async () => {
+        const factory = new ethers.ContractFactory(ABI[key], ABI_BC[key], await provider.getSigner());
+        const c = await factory.deploy();
+        await c.waitForDeployment();
+        implAddrs[key] = await c.getAddress();
+        return shortAddr(implAddrs[key]);
+      });
+    }
+    qAdd("部署 XPowerFactory（汇总 5 合约）", async () => {
+      const factory = new ethers.ContractFactory(ABI.XPowerFactory, ABI_BC.XPowerFactory, await provider.getSigner());
+      const c = await factory.deploy([implAddrs.XPowerParts, implAddrs.XPowerCircuit, implAddrs.XPowerMining, implAddrs.XPowerBox, implAddrs.XPowerMarket]);
+      await c.waitForDeployment();
+      factoryAddr = await c.getAddress();
+      try { localStorage.setItem("xp4_factory", JSON.stringify({ factory: factoryAddr.toLowerCase(), at: Date.now() })); } catch(e){}
+      return shortAddr(factoryAddr);
+    });
+  }
+  qAdd("创建项目（deployProject）", async () => {
+    const fac = new ethers.Contract(factoryAddr, ABI.XPowerFactory, await provider.getSigner());
+    const priceW = toWei(cfg.price, cfg.dec);
+    const wArr = cfg.ws.map(w => BigInt(w));
+    const tx = await fac.deployProject(cfg.token, XPWR, walletAddr, cfg.openMax, cfg.total, priceW, wArr, { from: walletAddr, gasLimit: 8000000 });
+    await tx.wait();
+    const lp = await fac.getLastProject();
+    projectAddr = lp[0];
+    userProjects = userProjects.filter(p => p.factory !== factoryAddr.toLowerCase());
+    userProjects.push({
+      factory: factoryAddr.toLowerCase(),
+      token: cfg.token.toLowerCase(),
+      parts: lp[0].toLowerCase(), circuit: lp[1].toLowerCase(), mining: lp[2].toLowerCase(),
+      box: lp[3].toLowerCase(), market: lp[4].toLowerCase(),
+      name: (cfg.token.slice(0,6)+"…"+cfg.token.slice(-4)).toUpperCase(),
+      total: cfg.total, price: cfg.price, dec: cfg.dec, creator: walletAddr.toLowerCase(),
+      created: Date.now()
+    });
+    localStorage.setItem("xp4_projects", JSON.stringify(userProjects));
+    projectMeta = cfg;
+    return shortAddr(lp[3]);
+  });
+  qAdd("验证并跳转项目页", async () => {
+    const fac = new ethers.Contract(factoryAddr, ABI.XPowerFactory, await getProvider());
+    const lp = await fac.getLastProject();
+    projectAddr = lp[0];
+    await sleep(300);
+    location.hash = "p/" + lp[3];
+    return "OK";
+  });
+
+  await qRun();
+  btn.disabled = false; btn.textContent = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:inline-block;vertical-align:-2px"><path d="M13 2 L4.5 13.5 H10.5 L9 22 L19.5 10 H13.5 Z" fill="currentColor"/></svg> 一键部署';
+}
+$("btnDeploy").onclick = deployProject;
+
+/* 编译产物 bytecode（部署用，与 ABI 同源） */
+const ABI_BC = {"XPowerParts":"0x60a0806040523461002a5730608052610a5c9081610030823960805181818161020601526104ad0152f35b600080fdfe60806040908082526004918236101561001757600080fd5b600091823560e01c908162fdd58e1461082257508063156e29f614610771578063308f307a1461072f5780633092afd5146106e75780634e1273f41461058e5780634f1ef286146104325780635c60da1b146103eb5780638129fc1c146103705780638da5cb5b14610349578063983b2d56146102fe578063a22cb465146102a7578063b4af3f061461025a578063e985e9c51461025a578063f2fde38b146101de578063f46eccc4146101a15763f5298aca146100d457600080fd5b3461019d576100e236610892565b9192338552600360205260ff8186205416801561018a575b610103906109b2565b818552600160209081528186206001600160a01b039095168087529490528085208054848103919082116101775755805133815260208101949094528301849052606083015260808201527fc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f629060a090a180f35b634e487b7160e01b875260118852602487fd5b5084546001600160a01b031633146100fa565b5080fd5b503461019d57602036600319011261019d5760209160ff9082906001600160a01b036101cb610861565b1681526003855220541690519015158152f35b8234610257576020366003190112610257576101f8610861565b6001600160a01b0361022e307f000000000000000000000000000000000000000000000000000000000000000083161415610945565b82549161023e828416331461097d565b16906bffffffffffffffffffffffff60a01b1617815580f35b80fd5b503461019d578060031936011261019d5760ff81602093610279610861565b61028161087c565b6001600160a01b0391821683526002875283832091168252855220549151911615158152f35b503461019d578060031936011261019d576102c0610861565b90602435918215158093036102fa5733845260026020528184209060018060a01b0316845260205282209060ff8019835416911617905580f35b8380fd5b503461019d57602036600319011261019d57610318610861565b82546001600160a01b039190610331908316331461097d565b16825260036020528120805460ff1916600117905580f35b503461019d578160031936011261019d57905490516001600160a01b039091168152602090f35b5082346103e757826003193601126103e75782549060ff8260a01c166103be57506001600160a81b03191633908117600160a01b178355825260036020528120805460ff1916600117905580f35b606490602084519162461bcd60e51b8352820152600360248201526206475760ec1b6044820152fd5b8280fd5b503461019d578160031936011261019d577f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc5490516001600160a01b039091168152602090f35b508083916003193601126103e75782610449610861565b60243567ffffffffffffffff81116103e757366023820112156103e7578085013561047b61047682610929565b6108ed565b908082526020820192366024838301011161058a578186926024602093018637830101526001600160a01b036104d5307f000000000000000000000000000000000000000000000000000000000000000083161415610945565b6104e381865416331461097d565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc9084166bffffffffffffffffffffffff60a01b825416179055519081610528578380f35b83925af43d15610585573d61053f61047682610929565b9081528460203d92013e5b1561055757828180808380f35b906020606492519162461bcd60e51b835282015260086024820152671d5c19c819985a5b60c21b6044820152fd5b61054a565b8580fd5b50913461019d578260031936011261019d5767ffffffffffffffff9080358281116102fa576105c090369083016108bc565b93909260249081359081116103e757918486926105e18995369088016108bc565b966105ee610476896109e8565b938885526105fb896109e8565b602099868b019891601f1901368a37875b818110610655575050505050505083519485948186019282875251809352850193925b82811061063e57505050500390f35b83518552869550938101939281019260010161062f565b6106668183889e9b9a9c9d9e610a00565b358852600189528b882061067b828587610a00565b356001600160a01b038116908190036106e357895289528b8820548a518210156106d157898260051b8c01015260001981146106bf576001019a999896979a61060c565b634e487b7160e01b8852601185528688fd5b634e487b7160e01b8952603286528789fd5b8980fd5b503461019d57602036600319011261019d57610701610861565b82546001600160a01b03919061071a908316331461097d565b16825260036020528120805460ff1916905580f35b5082346103e757816003193601126103e757602092829161074e61087c565b90358252600185528282206001600160a01b039091168252845220549051908152f35b503461019d5761078036610892565b91338552600360205260ff8486205416801561080f575b6107a0906109b2565b81855260016020528385209060018060a01b031690818652602052838520805490848201809211610177575583513381526020810186905293840152606083015260808201527fc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f629060a090a180f35b5084546001600160a01b03163314610797565b919050346103e757806003193601126103e757602092610840610861565b6024358252600185528282206001600160a01b039091168252845220548152f35b600435906001600160a01b038216820361087757565b600080fd5b602435906001600160a01b038216820361087757565b6060906003190112610877576004356001600160a01b038116810361087757906024359060443590565b9181601f840112156108775782359167ffffffffffffffff8311610877576020808501948460051b01011161087757565b6040519190601f01601f1916820167ffffffffffffffff81118382101761091357604052565b634e487b7160e01b600052604160045260246000fd5b67ffffffffffffffff811161091357601f01601f191660200190565b1561094c57565b60405162461bcd60e51b81526020600482015260096024820152686e6f742070726f787960b81b6044820152606490fd5b1561098457565b60405162461bcd60e51b815260206004820152600660248201526510b7bbb732b960d11b6044820152606490fd5b156109b957565b60405162461bcd60e51b815260206004820152600760248201526610b6b4b73a32b960c91b6044820152606490fd5b67ffffffffffffffff81116109135760051b60200190565b9190811015610a105760051b0190565b634e487b7160e01b600052603260045260246000fdfea26469706673582212200668fe99242ec36481f0e1b56953e48ea118b92d7117dbe599c81ae177a568d964736f6c63430008110033","XPowerCircuit":"0x60a0806040523461002a573060805261118b90816100308239608051818181610161015261073c0152f35b600080fdfe60806040908082526004918236101561001757600080fd5b600092833560e01c92836302d05d3f14610ac657508263242d481b14610aad5782632ac8c178146108ef5782632cf0d6ca146108c05782633060a0461461087757826342c56438146108215782634f1ef286146106be57826353902715146106095782635c60da1b146105c15782636046cd99146105985782636dcea85f1461053a57826373c5bacb1461048d57826380f556051461046457826382baf9661461043a5782638956cd1d146104085782638da5cb5b146103e0578263b47e9c79146103b7578263c0c53b8b146102f4578263c1292cc3146102d5578263daa0afe21461028e578263e327a6af1461025c578263e702d45414610233578263e844c07a146101d757508163ee9627b3146101b0575063f2fde38b1461013a57600080fd5b346101ad5760203660031901126101ad57610153610aeb565b6001600160a01b03610189307f000000000000000000000000000000000000000000000000000000000000000083161415610bce565b8254916101998284163314610c06565b16906001600160601b0360a01b1617815580f35b80fd5b9050346101d357816003193601126101d35760209051678ac7230489e800008152f35b5080fd5b8390346101d35760203660031901126101d3576101f2610aeb565b6003546001600160a01b039190821633148015610227575b61021390610c3b565b82546001600160a01b031916911617905580f35b5083548216331461020a565b8382346101d357816003193601126101d35760015490516001600160a01b039091168152602090f35b8382346101d357806003193601126101d35760209061028561027c610aeb565b602435906110c0565b90519015158152f35b9150346102d1573660031901126101d3573560243560ff811681036102d157825b8281106102ba578380f35b6102cc906102c783610f59565b610c6c565b6102af565b8280fd5b8382346101d357816003193601126101d3576020906005549051908152f35b909150346102d15760603660031901126102d157610310610aeb565b90610319610b06565b6001600160a01b03604435818116959193908690036103b35786549160ff8360a01c1661038a575050600160a01b9033906affffffffffffffffffffff60a81b1617178555816001600160601b0360a01b931683600154161760015516816002541617600255600354161760035580f35b906020606492519162461bcd60e51b8352820152600360248201526206475760ec1b6044820152fd5b8680fd5b8382346101d357816003193601126101d35760025490516001600160a01b039091168152602090f35b8382346101d357816003193601126101d357905490516001600160a01b039091168152602090f35b8390346101d35760203660031901126101d35735815b818110610429578280f35b610435906102c7610cee565b61041e565b8390346101d35760203660031901126101d3573560ff811681036101d35761046190610f59565b80f35b8382346101d357816003193601126101d35760085490516001600160a01b039091168152602090f35b5082346101ad57602090816003193601126101ad5782906001600160a01b036104b4610aeb565b16815260078352818120908251808584549182815201908194845286842090845b81811061052657505050816104eb910382610b90565b83519485948186019282875251809352850193925b82811061050f57505050500390f35b835185528695509381019392810192600101610500565b8254845292880192600192830192016104d5565b83346101ad5760203660031901126101ad57610554610aeb565b6003546001600160a01b03919082163314801561058c575b61057590610c3b565b166001600160601b0360a01b600854161760085580f35b5082548216331461056c565b909150346102d157826003193601126102d1575490516001600160a01b03909116815260209150f35b8382346101d357816003193601126101d3577f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc5490516001600160a01b039091168152602090f35b8390346101d357826003193601126101d3576024359081151582036102d157600354336001600160a01b03918216149081156106b0575b81156106a3575b501561067b573582526006602052918120805465ff0000000000191692151560281b65ff0000000000169290921790915580f35b606490602085519162461bcd60e51b83528201526002602482015261216d60f01b6044820152fd5b9050815416331485610647565b809150845416331490610640565b9150806003193601126102d157826106d4610aeb565b60243567ffffffffffffffff81116102d157366023820112156102d157808501356106fe81610bb2565b9061070b86519283610b90565b8082526020820192366024838301011161081d578186926024602093018637830101526001600160a01b03610764307f000000000000000000000000000000000000000000000000000000000000000083161415610bce565b610772818654163314610c06565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc9084166001600160601b0360a01b8254161790555190816107b2578380f35b83925af43d15610818573d6107c681610bb2565b906107d384519283610b90565b81528460203d92013e5b156107ea57828180808380f35b906020606492519162461bcd60e51b835282015260086024820152671d5c19c819985a5b60c21b6044820152fd5b6107dd565b8580fd5b8382346101d357806003193601126101d35761083b610aeb565b6001600160a01b031682526007602052808220805460243593908410156101ad575060209261086991610b1c565b91905490519160031b1c8152f35b909150346102d15760203660031901126102d1576060928291358152600660205220549060ff815192818116845263ffffffff8160081c16602085015260281c16151590820152f35b8382346101d357816003193601126101d3576020905173594c2c32cb60a0d93f0ce1cc9f6088709b50addc8152f35b9083346101ad5760603660031901126101ad5761090a610aeb565b610912610b06565b926044359160018060a01b0390816008541633148015610aa0575b15610a7557838552600660205260ff8386205460281c16610a495781168452600760205281842094845b865480821015610a3757859061096d838a610b1c565b929054600393841b1c1461098b57505061098690610c6c565b610957565b909293949596979160001991828101908111610a2457906109bf6109b26109da9386610b1c565b905490871b1c9185610b1c565b90919082549060031b600019811b9283911b16911916179055565b81548015610a11576104619899508101926109f58484610b1c565b81939154921b1b19169055555b16845260076020528320610cc4565b634e487b7160e01b895260318a52602489fd5b634e487b7160e01b8a5260118b5260248afd5b50509091929395506104619450610a02565b825162461bcd60e51b815260208189015260066024820152651cdd185ad95960d21b6044820152606490fd5b825162461bcd60e51b81526020818901526005602482015264042c2eae8d60db1b6044820152606490fd5b508160035416331461092d565b83346101ad57806003193601126101ad57610461610cee565b8490346101d357816003193601126101d3576003546001600160a01b03168152602090f35b600435906001600160a01b0382168203610b0157565b600080fd5b602435906001600160a01b0382168203610b0157565b8054821015610b345760005260206000200190600090565b634e487b7160e01b600052603260045260246000fd5b67ffffffffffffffff8111610b5e57604052565b634e487b7160e01b600052604160045260246000fd5b6060810190811067ffffffffffffffff821117610b5e57604052565b90601f8019910116810190811067ffffffffffffffff821117610b5e57604052565b67ffffffffffffffff8111610b5e57601f01601f191660200190565b15610bd557565b60405162461bcd60e51b81526020600482015260096024820152686e6f742070726f787960b81b6044820152606490fd5b15610c0d57565b60405162461bcd60e51b815260206004820152600660248201526510b7bbb732b960d11b6044820152606490fd5b15610c4257565b60405162461bcd60e51b8152602060048201526002602482015261216360f01b6044820152606490fd5b6000198114610c7b5760010190565b634e487b7160e01b600052601160045260246000fd5b90816020910312610b0157518015158103610b015790565b91909163ffffffff80809416911602918216918203610c7b57565b9081549168010000000000000000831015610b5e57826109bf916001610cec95018155610b1c565b565b60015b6008811115610e85575060018060a01b03600154169060408051906323b872dd60e01b825233600483015273594c2c32cb60a0d93f0ce1cc9f6088709b50addc6024830152678ac7230489e8000060448301526020918281606481600080995af18015610e7b57610e4e575b50610d69600554610c6c565b91826005556005610d78610f00565b0660010180600111610e3a5760ff166032610d91610f00565b0660960180609611610e265791610e1c600792610cec979894610dbb63ffffffff80921683610ca9565b90875192610dc884610b74565b83521683820190815286820186815288875260068552878720925183549251915165ffffffffffff1990931660ff919091161760089190911b64ffffffff00161790151560281b65ff000000000016179055565b3383525220610cc4565b634e487b7160e01b87526011600452602487fd5b634e487b7160e01b86526011600452602486fd5b610e6d90833d8511610e74575b610e658183610b90565b810190610c91565b5038610d5d565b503d610e5b565b82513d87823e3d90fd5b6002546001600160a01b03169190823b15610b01576040928351938491637a94c56560e11b8352336004840152836024840152600160448401528260646000978880945af1908115610ef75750610ee3939450610ee8575b50610c6c565b610cf1565b610ef190610b4a565b38610edd565b513d86823e3d90fd5b6005545a906040519160208301914483524260408501524360608501523360601b6080850152609484015260b483015260b4825260e082019180831067ffffffffffffffff841117610b5e576064926040525190200690565b60ff1690600180831015806110b5575b1561108a57805b6008811115611022575054604080516323b872dd60e01b815233600482015273594c2c32cb60a0d93f0ce1cc9f6088709b50addc6024820152678ac7230489e80000604482015260009492602091908290829060649082908a906001600160a01b03165af1801561101857610ffb575b50610fec600554610c6c565b92836005556032610d91610f00565b61101190823d8411610e7457610e658183610b90565b5038610fe0565b83513d88823e3d90fd5b6002546001600160a01b0316803b15610b0157604080518092637a94c56560e11b82523360048301528460248301528560448301528160646000938480945af19182156110805750509061107b9291610ee85750610c6c565b610f70565b51903d90823e3d90fd5b606460405162461bcd60e51b81526020600482015260046024820152633a34b2b960e11b6044820152fd5b506005831115610f69565b9060009160018060a01b0316825260206007815260408320604051808284829454938481520190875284872092875b8682821061113f5750505061110692500382610b90565b835b81518110156111385783838260051b840101511461112e5761112990610c6c565b611108565b5050505050600190565b5050505090565b85548452600195860195879550930192016110ef56fea264697066735822122057c416f16a5d924382814e940eb3746795a94816ea291b8c6cd272e4a14882a964736f6c63430008110033","XPowerMining":"0x60a0806040523461002a5730608052610eb59081610030823960805181818161011e01526105540152f35b600080fdfe608060409080825260048036101561001657600080fd5b600092833560e01c928363026c4207146107a1575082630a42f0491461077a578263228cb733146107515782632e17de78146107345782633d439f6514610706578263485cc9551461065f5782634d6ed8c4146106395782634f1ef286146104d55782635c60da1b1461048d57826360770fa2146104375782636ba4c138146103225782638da5cb5b146102fa5782639398de23146102d1578263a0dc2758146102b4578263a61248141461020857508163a694fc3a146101e457508063c2127793146101ab578063d2acd13d1461016d5763f2fde38b146100f757600080fd5b3461016a57602036600319011261016a576101106107bd565b6001600160a01b03610146307f0000000000000000000000000000000000000000000000000000000000000000831614156108a7565b82549161015682841633146108df565b16906001600160601b0360a01b1617815580f35b80fd5b503461016a5761017c3661085a565b825b818110610189578380f35b806101a161019b6101a6938587610c70565b35610c8d565b610b33565b61017e565b503461016a576101ba3661085a565b825b8181106101c7578380f35b806101a16101d96101df938587610c70565b35610944565b6101bc565b905034610204576020366003190112610204576102019035610944565b80f35b5080fd5b833461016a576020908160031936011261016a5782906001600160a01b0361022e6107bd565b16815260068352818120908251808584549182815201908194845286842090845b8181106102a057505050816102659103826107d8565b83519485948186019282875251809352850193925b82811061028957505050500390f35b83518552869550938101939281019260010161027a565b82548452928801926001928301920161024f565b839034610204578160031936011261020457602090516154608152f35b83903461020457816003193601126102045760025490516001600160a01b039091168152602090f35b839034610204578160031936011261020457905490516001600160a01b039091168152602090f35b915034610433576103323661085a565b90918491825b818110610349576020878751908152f35b610354818387610c70565b356103676103628233610b42565b6108df565b61037081610d68565b80610391575b509061038c918552836020524287862055610b33565b610338565b909760018060a01b03600154168689519163a9059cbb60e01b835233888401528460248401528260448160209485945af18015610429576103e5575b505061038c92916103dd91610921565b979091610376565b81813d8311610422575b6103f981836107d8565b8101031261041e57916103dd9161041361038c9594610914565b5091819394506103cd565b8680fd5b503d6103ef565b8a513d8a823e3d90fd5b8280fd5b8390346102045780600319360112610204576104516107bd565b6001600160a01b0316825260066020528082208054602435939084101561016a575060209261047f9161082c565b91905490519160031b1c8152f35b8390346102045781600319360112610204577f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc5490516001600160a01b039091168152602090f35b8091925060031936011261043357826104ec6107bd565b60243567ffffffffffffffff81116104335736602382011215610433578085013561051681610810565b90610523865192836107d8565b80825260208201923660248383010111610635578186926024602093018637830101526001600160a01b0361057c307f0000000000000000000000000000000000000000000000000000000000000000831614156108a7565b61058a8186541633146108df565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc9084166001600160601b0360a01b8254161790555190816105ca578380f35b83925af43d15610630573d6105de81610810565b906105eb845192836107d8565b81528460203d92013e5b1561060257828180808380f35b906020606492519162461bcd60e51b835282015260086024820152671d5c19c819985a5b60c21b6044820152fd5b6105f5565b8580fd5b833461016a57602036600319011261016a575061065860209235610d68565b9051908152f35b9150346104335781600319360112610433576106796107bd565b906024359260018060a01b03918285168095036106355785549160ff8360a01c166106dd575050600160a01b9033906affffffffffffffffffffff60a81b16171784556001600160601b0360a01b9116816001541617600155600254161760025580f35b906020606492519162461bcd60e51b8352820152600360248201526206475760ec1b6044820152fd5b915034610433576020366003190112610433578160209363ffffffff92358152600585522054169051908152f35b838234610204576020366003190112610204576102019035610c8d565b83903461020457816003193601126102045760015490516001600160a01b039091168152602090f35b91503461043357602036600319011261043357602092818392358252845220549051908152f35b8490346102045781600319360112610204576020906003548152f35b600435906001600160a01b03821682036107d357565b600080fd5b90601f8019910116810190811067ffffffffffffffff8211176107fa57604052565b634e487b7160e01b600052604160045260246000fd5b67ffffffffffffffff81116107fa57601f01601f191660200190565b80548210156108445760005260206000200190600090565b634e487b7160e01b600052603260045260246000fd5b9060206003198301126107d35760043567ffffffffffffffff928382116107d357806023830112156107d35781600401359384116107d35760248460051b830101116107d3576024019190565b156108ae57565b60405162461bcd60e51b81526020600482015260096024820152686e6f742070726f787960b81b6044820152606490fd5b156108e657565b60405162461bcd60e51b815260206004820152600660248201526510b7bbb732b960d11b6044820152606490fd5b519081151582036107d357565b9190820180921161092e57565b634e487b7160e01b600052601160045260246000fd5b906109526103628333610b42565b60025460408051631830502360e11b81526004808201869052949260009291906001600160a01b0316606082602481845afa8015610a985784928591610ad5575b50610aa957803b15610aa5578380916044855180948193635390271560e01b83528a8d840152600160248401525af18015610a9857610a68575b50610a0790848452866020524283852055600560205282842063ffffffff80921663ffffffff198254161790558284205416600354610921565b6003553382526006602052812080549168010000000000000000831015610a555750610a3b9293945060018201815561082c565b819291549060031b600019811b9283911b16911916179055565b634e487b7160e01b815260418652602490fd5b67ffffffffffffffff8194929411610a8557825291610a076109cd565b634e487b7160e01b825260418752602482fd5b50505051903d90823e3d90fd5b8380fd5b825162461bcd60e51b815260208189015260066024820152651cdd185ad95960d21b6044820152606490fd5b9250506060823d8211610b2b575b81610af0606093836107d8565b81010312610aa557815160ff811603610aa55760208201519163ffffffff83168303610b275783610b219101610914565b38610993565b8480fd5b3d9150610ae3565b600019811461092e5760010190565b6002546040516373c5bacb60e01b81526001600160a01b0392831660048201526000939290918491829184916024918391165afa918215610c63578192610bbc575b505b8151811015610bb6578260208260051b8401015114610bad57610ba890610b33565b610b86565b50505050600190565b50505090565b9091503d8083833e610bce81836107d8565b81016020908183820312610aa557825167ffffffffffffffff93848211610635570181601f82011215610b27578051938411610c4f578360051b9060405194610c19858401876107d8565b85528380860192820101928311610635578301905b828210610c4057505050509038610b84565b81518152908301908301610c2e565b634e487b7160e01b85526041600452602485fd5b50604051903d90823e3d90fd5b91908110156108445760051b0190565b9190820391821161092e57565b90610c9b6103628333610b42565b6002546000929083906001600160a01b0316803b15610204578190604460405180948193635390271560e01b83528760048401528160248401525af18015610d4a57610d1d575b5091826040929382526005602052610d0563ffffffff8484205416600354610c80565b6003558152600560205220805463ffffffff19169055565b67ffffffffffffffff8111610d36576040908152610ce2565b634e487b7160e01b84526041600452602484fd5b6040513d86823e3d90fd5b8181029291811591840414171561092e57565b906000918083526020906005825263ffffffff80604086205416158015610e75575b610e70576001546040516370a0823160e01b8152306004820152908490829060249082906001600160a01b03165afa908115610e65578691610e38575b5082865260048452610ddd604087205442610c80565b9161546094858411610e30575b600590610e01949589525260408720541690610d55565b600354908115610e1c57610e189394955004610d55565b0490565b634e487b7160e01b86526012600452602486fd5b859350610dea565b90508381813d8311610e5e575b610e4f81836107d8565b81010312610635575138610dc7565b503d610e45565b6040513d88823e3d90fd5b505050565b5060035415610d8a56fea26469706673582212203c0eee34eee5d3a7ac86bc5d0d668d93a3f27e57a948cb961ccf7f787f96e47264736f6c63430008110033","XPowerBox":"0x60a080604052346100315730608052610fff908161003782396080518181816104cb015281816108970152610c1b0152f35b600080fdfe608080604052600436101561001357600080fd5b60003560e01c9081630fceb9ab14610ca6575080632ba7077414610c885780633659cfe614610bf95780633f52d1b4146109f957806344ff038f146109db5780634ed3faf2146109775780634f1ef286146108175780635c60da1b146107cf5780636046cd99146107a65780638da5cb5b1461077d57806391686f53146106dd57806396336b30146106b457806399ec679814610541578063b47e9c7914610518578063f2fde38b146104a45763f35dea5a146100cf57600080fd5b346103a25760403660031901126103a2576004356000526005602052604060002060ff600c820154161580610487575b156104585760243515158061044a575b1561042157600181015460243581029080820460243514901517156103ec57600154825482159291600a808402926001600160a01b03908116921690848404148517156103ec576040516323b872dd60e01b8082523360048301526001600160a01b039390931660248201526064938490046044820152919260209183919082906000905af1801561039657610402575b506001546003546001600160a01b0390811694605a858102959390921692850490911417156103ec576040519182523360048301526001600160a01b03939093166024820152606491829004604482015291602091839182906000905af18015610396576103bd575b50610215602435610eda565b906102236040519283610d86565b6024358252601f19610236602435610eda565b0136602084013760005b60243581106102a1575060030161025a6024358254610e51565b905560405180916020820160208352815180915260206040840192019060005b818110610288575050500390f35b825184528594506020938401939092019160010161027a565b604051600060048401825b600883106103a7575050508061010081011067ffffffffffffffff6101008301111761038057806101006102e39201604052610ef2565b6002549091906001600160a01b0316803b156103a25760008091606460405180948193630ab714fb60e11b8352336004840152886024840152600160448401525af1801561039657610368575b5083518110156103525761034d9160208260051b86010152610e31565b610240565b634e487b7160e01b600052603260045260246000fd5b67ffffffffffffffff81116103805760405238610330565b634e487b7160e01b600052604160045260246000fd5b6040513d6000823e3d90fd5b600080fd5b60016020819284548152019201920191906102ac565b6103de9060203d6020116103e5575b6103d68183610d86565b810190610ec2565b5038610209565b503d6103cc565b634e487b7160e01b600052601160045260246000fd5b61041a9060203d6020116103e5576103d68183610d86565b50386101a0565b60405162461bcd60e51b81526020600482015260016024820152603760f91b6044820152606490fd5b50600654602435111561010f565b60405162461bcd60e51b81526020600482015260076024820152661cdbdb191bdd5d60ca1b6044820152606490fd5b506104986024356003830154610e51565b600282015410156100ff565b346103a25760203660031901126103a2576104bd610d21565b6001600160a01b036104f3307f000000000000000000000000000000000000000000000000000000000000000083161415610dc4565b600054916105048284163314610dfc565b6001600160a01b0319909216911617600055005b346103a25760003660031901126103a2576002546040516001600160a01b039091168152602090f35b346103a2576101403660031901126103a2576004356101443681116103a2576000805b600882106106935761057891501515610e5e565b81151580610687575b61058a90610e8e565b610595600454610e31565b9081600455604051906105a782610d4d565b338252602093848301916024358352604084019182526060840160008152604051916105d283610d69565b876044845b83821061067857505050506080850191825260a085019360008552866000526005885260406000209560018060a01b039051166001600160601b0360a01b8754161786555192600193848701555160028601555160038501555160005b600881106106645750505090600c61065c9251151591019060ff801983541691151516179055565b604051908152f35b815185820160040155908601908201610634565b813581529082019082016105d7565b50612710821115610581565b6106a86106ae918360051b6044013590610e51565b91610e31565b90610564565b346103a25760003660031901126103a2576001546040516001600160a01b039091168152602090f35b346103a25760403660031901126103a2576004356106f9610d37565b60005490916001600160a01b03916107149083163314610dfc565b80151580610771575b15610747576000526005602052604060002091166001600160601b0360a01b825416179055600080f35b60405162461bcd60e51b81526020600482015260026024820152611a5960f21b6044820152606490fd5b5060045481111561071d565b346103a25760003660031901126103a2576000546040516001600160a01b039091168152602090f35b346103a25760003660031901126103a2576003546040516001600160a01b039091168152602090f35b346103a25760003660031901126103a2577f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc546040516001600160a01b039091168152602090f35b60403660031901126103a25761082b610d21565b6024359067ffffffffffffffff82116103a257366023830112156103a257816004013561085781610da8565b906108656040519283610d86565b808252602082019336602483830101116103a257816000926024602093018737830101526001600160a01b036108bf307f000000000000000000000000000000000000000000000000000000000000000083161415610dc4565b6108ce81600054163314610dfc565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc9083166001600160601b0360a01b825416179055518061090b57005b60009283925af43d15610972573d61092281610da8565b906109306040519283610d86565b8152600060203d92013e5b1561094257005b60405162461bcd60e51b81526020600482015260086024820152671d5c19c819985a5b60c21b6044820152606490fd5b61093b565b346103a25760203660031901126103a257600435600052600560205260a06040600020600180831b0381541690600181015490600281015460ff600c6003840154930154169260405194855260208501526040840152606083015215156080820152f35b346103a25760003660031901126103a2576020600454604051908152f35b346103a2576101e03660031901126103a257610a13610d21565b610a1b610d37565b906001600160a01b0360443581811692908390036103a257608435936101c4903682116103a2578135948486168096036103a25760005460ff8160a01c16610bce57600160a01b9033906affffffffffffffffffffff60a81b161717600055846001600160601b0360a01b92816001961684875416178655168260025416176002558160035416176003556064356006556000805b60088210610bb357610ac491501515610e5e565b85151580610ba7575b610ad690610e8e565b8260045560405194610ae786610d4d565b855260209586860160a43581526040870191825260608701926000845260405194610b1186610d69565b8960c4875b838210610b9857505050506080880194855260a0880196600088528660005260058a5260406000209851169088541617875551848701555160028601555160038501555160005b60088110610b8457610b8285600c8651151591019060ff801983541691151516179055565b005b815185820160040155908501908201610b5d565b81358152908201908201610b16565b50612710861115610acd565b6106a8610bc8918360051b60c4013590610e51565b90610ab0565b60405162461bcd60e51b815260206004820152600360248201526206475760ec1b6044820152606490fd5b60203660031901126103a257610c0d610d21565b6001600160a01b03610c43307f000000000000000000000000000000000000000000000000000000000000000083161415610dc4565b610c5281600054163314610dfc565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc80546001600160a01b03191691909216179055005b346103a25760003660031901126103a2576020600654604051908152f35b346103a25760203660031901126103a2576004356000818152600560205260409020549091906001600160a01b03163303610cfa57506000908152600560205260409020600c01805460ff19166001179055005b62461bcd60e51b8152602060048201526002602482015261216360f01b6044820152606490fd5b600435906001600160a01b03821682036103a257565b602435906001600160a01b03821682036103a257565b60c0810190811067ffffffffffffffff82111761038057604052565b610100810190811067ffffffffffffffff82111761038057604052565b90601f8019910116810190811067ffffffffffffffff82111761038057604052565b67ffffffffffffffff811161038057601f01601f191660200190565b15610dcb57565b60405162461bcd60e51b81526020600482015260096024820152686e6f742070726f787960b81b6044820152606490fd5b15610e0357565b60405162461bcd60e51b815260206004820152600660248201526510b7bbb732b960d11b6044820152606490fd5b60001981146103ec5760010190565b9060088110156103525760051b0190565b919082018092116103ec57565b15610e6557565b60405162461bcd60e51b81526020600482015260016024820152607760f81b6044820152606490fd5b15610e9557565b60405162461bcd60e51b81526020600482015260056024820152641d1bdd185b60da1b6044820152606490fd5b908160209103126103a2575180151581036103a25790565b67ffffffffffffffff81116103805760051b60200190565b6000805b60088110610fab57505a60405160208101914483524260408301524360608301523360601b6080830152609482015260948152610f3281610d4d565b5190208115610f965706906000915b60088310610f5157505050600890565b610f5b8383610e40565b518110610f8657610f6c8383610e40565b5181039081116103ec57610f809092610e31565b91610f41565b5050600181018091116103ec5790565b90506007915016600181018091116103ec5790565b906106a8610fc491610fbd8486610e40565b5190610e51565b610ef656fea2646970667358221220453f3c0224d98a2377e2c2f321a4349b213e36b4f800b897a9cefbf515d35dd464736f6c63430008110033","XPowerMarket":"0x60a0806040523461002a5730608052610f2c908161003082396080518181816101c501526107af0152f35b600080fdfe60406080815260048036101561001457600080fd5b600091823560e01c806319fb4abf146108cb5780632453ffa8146108ad57806340e58ee5146108905780634f1ef286146107325780635c60da1b146106ea57806377a99c83146106245780638da5cb5b146105fc5780639398de23146105d357806396336b30146105aa578063998c9a1e14610585578063a85c38ef1461051c578063b47e9c79146104f3578063c0c53b8b14610430578063d96a094a14610215578063f2fde38b1461019c578063f3d96c18146101035763f48be080146100db57600080fd5b346100ff573660031901126100fb576100f8906024359035610c1b565b80f35b5080fd5b8280fd5b50346100ff573660031901126100fb5767ffffffffffffffff8135818111610198576101329036908401610926565b9190926024359182116101945761014b91369101610926565b9091610158828214610e9e565b845b818110610165578580f35b8061018a61017761018f938589610ed0565b35610183838789610ed0565b3590610c1b565b610a93565b61015a565b8480fd5b8380fd5b8334610212576020366003190112610212576101b661095c565b6001600160a01b03906101ed307f0000000000000000000000000000000000000000000000000000000000000000841614156109f6565b6101fb828454163314610a2e565b166001600160601b0360a01b600054161760005580f35b80fd5b508290346100fb5760203660031901126100fb578235825260056020528082208381019160ff8354168061041c575b61024d90610a63565b60018060a01b0394856001541692868154169360038201549060028301958654928381029381850414901517156104095785516323b872dd60e01b8152338682019081526001600160a01b0390921660208381019190915260408301949094529291839182908b90829060600103925af180156103ff576103d1575b50805460a01c60ff16600103610362576001869760029796975416910154935490803b1561035e578351630ab714fb60e11b81523393810193845260208401959095526040830191909152849184919082908490829060600103925af19081156103555750610341575b50505b805460ff1916905580f35b61034a90610972565b6100fb578183610333565b513d84823e3d90fd5b8580fd5b91939560019193506003541691015491813b15610194578351630559182f60e31b81523091810191825233602083015260408201939093529192918491849182908490829060600103925af190811561035557506103c2575b5090610336565b6103cb90610972565b826103bb565b6103f19060203d81116103f8575b6103e981836109b8565b810190610c03565b50876102c9565b503d6103df565b84513d89823e3d90fd5b634e487b7160e01b895260118552602489fd5b5081546001600160a01b0316331415610244565b50346100ff5760603660031901126100ff5761044a61095c565b906001600160a01b03602435818116929083900361035e57604435948286168096036104ef5786549160ff8360a01c166104c6575050600160a01b9033906affffffffffffffffffffff60a81b16171785556001600160601b0360a01b9216826001541617600155816002541617600255600354161760035580f35b906020606492519162461bcd60e51b8352820152600360248201526206475760ec1b6044820152fd5b8680fd5b8382346100fb57816003193601126100fb5760025490516001600160a01b039091168152602090f35b50346100ff5760203660031901126100ff578060c09383358152600560205220805492600182015460ff6002840154926003850154940154169360ff81519660018060a01b038116885260a01c16602087015285015260608401526080830152151560a0820152f35b5050346100fb5760603660031901126100fb576100f890604435906024359035610ab8565b8382346100fb57816003193601126100fb5760015490516001600160a01b039091168152602090f35b8382346100fb57816003193601126100fb5760035490516001600160a01b039091168152602090f35b8382346100fb57816003193601126100fb57905490516001600160a01b039091168152602090f35b5050346100fb5760603660031901126100fb5767ffffffffffffffff908035828111610198576106579036908301610926565b909260243581811161035e576106709036908501610926565b9190936044359182116104ef5761068991369101610926565b919092818114806106e1575b61069e90610e9e565b865b8181106106ab578780f35b8061018a6106bd6106dc93858b610ed0565b356106c983878b610ed0565b356106d584898b610ed0565b3591610ab8565b6106a0565b50818314610695565b8382346100fb57816003193601126100fb577f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc5490516001600160a01b039091168152602090f35b50806003193601126100ff578261074761095c565b60243567ffffffffffffffff81116100ff57366023820112156100ff5780850135610771816109da565b9061077e865192836109b8565b8082526020820192366024838301011161035e578186926024602093018637830101526001600160a01b036107d7307f0000000000000000000000000000000000000000000000000000000000000000831614156109f6565b6107e5818654163314610a2e565b7f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc9084166001600160601b0360a01b825416179055519081610825578380f35b83925af43d1561088b573d610839816109da565b90610846845192836109b8565b81528460203d92013e5b1561085d57828180808380f35b906020606492519162461bcd60e51b835282015260086024820152671d5c19c819985a5b60c21b6044820152fd5b610850565b5050346100fb5760203660031901126100fb576100f89035610d68565b5090346100ff57826003193601126100ff5760209250549051908152f35b5050346100fb5760203660031901126100fb5780359067ffffffffffffffff82116100ff576108fc91369101610926565b825b818110610909578380f35b8061018a61091b610921938587610ed0565b35610d68565b6108fe565b9181601f840112156109575782359167ffffffffffffffff8311610957576020808501948460051b01011161095757565b600080fd5b600435906001600160a01b038216820361095757565b67ffffffffffffffff811161098657604052565b634e487b7160e01b600052604160045260246000fd5b60c0810190811067ffffffffffffffff82111761098657604052565b90601f8019910116810190811067ffffffffffffffff82111761098657604052565b67ffffffffffffffff811161098657601f01601f191660200190565b156109fd57565b60405162461bcd60e51b81526020600482015260096024820152686e6f742070726f787960b81b6044820152606490fd5b15610a3557565b60405162461bcd60e51b815260206004820152600660248201526510b7bbb732b960d11b6044820152606490fd5b15610a6a57565b60405162461bcd60e51b81526020600482015260016024820152602160f81b6044820152606490fd5b6000198114610aa25760010190565b634e487b7160e01b600052601160045260246000fd5b90929160009380151580610bfa575b610ad090610a63565b6002546001600160a01b0393908416803b156104ef57604051637a94c56560e11b815233600482015260248101839052604481018490529087908290606490829084905af18015610bef5791610bda9697939160049593610bdc575b50610bb260ff60405197610b3f8961099c565b33895260208901906001825260408a0194855260608a0195865260808a01968752604060a08b019860018a52610b758b54610a93565b808c55815260056020522099518a54925160ff60a01b941660a01b939093166001600160a81b0319909216921660ff60a01b191691909117178755565b51600186015551600285015551600384015551151591019060ff801983541691151516179055565b565b610be890949194610972565b9238610b2c565b6040513d89823e3d90fd5b50811515610ac7565b90816020910312610957575180151581036109575790565b6000929180151580610cf2575b610c3190610a63565b6003546001600160a01b03908116803b1561035e57604051630559182f60e31b8152336004820152306024820152604481018590529086908290606490829084905af18015610ce7579160049391610bda969793610cd4575b5060405194610c988661099c565b338652610bb260ff60208801600281526040890193845260608901946001865260808a01968752604060a08b019860018a52610b758b54610a93565b610ce090939193610972565b9138610c8a565b6040513d88823e3d90fd5b5060035460405163e327a6af60e01b81523360048201526024810184905290602090829060449082906001600160a01b03165afa8015610d5d57610c31918691610d3f575b509050610c28565b610d57915060203d81116103f8576103e981836109b8565b38610d37565b6040513d87823e3d90fd5b600090815260056020526040812090600482019160ff83541680610e8b575b610d9090610a63565b805460a01c60ff16600103610e235760018060a01b03600254166002600183015492015491813b1561019857604051630ab714fb60e11b81523360048201526024810191909152604481019290925290919081908390606490829084905af1908115610e175750610e08575b505b805460ff19169055565b610e1190610972565b38610dfc565b604051903d90823e3d90fd5b6001808060a01b0360035416910154813b156100ff57604051630559182f60e31b81523060048201523360248201526044810191909152919081908390606490829084905af1908115610e175750610e7c575b50610dfe565b610e8590610972565b38610e76565b5080546001600160a01b03163314610d87565b15610ea557565b60405162461bcd60e51b81526020600482015260036024820152623632b760e91b6044820152606490fd5b9190811015610ee05760051b0190565b634e487b7160e01b600052603260045260246000fdfea26469706673582212206086c5aea01bc0b44eca5b582762a73b7901dd223a4a96f8107a0e5df3e8227164736f6c63430008110033","XPowerFactory":"0x608060405234620001aa5762001b7a803803806200001d81620001c5565b92833981016020918281830312620001aa5780516001600160401b0391828211620001aa57019180601f84011215620001aa578251918211620001af578160051b92846200006d818601620001c5565b809481520190858295820101928311620001aa578501905b82821062000189575050600080546001600160a01b03199081163317825583519095919250600419016200015f57508151156200014b5760018060a01b03809351168460015416176001558151600110156200014b57826040830151168460025416176002558151600210156200014b57826060830151168460035416176003558151600310156200014b57826080830151168460045416176004558151600410156200014b575060a001511690600554161760055560405161198e9081620001ec8239f35b634e487b7160e01b81526032600452602490fd5b6064906040519062461bcd60e51b8252600482015260036024820152623632b760e91b6044820152fd5b81516001600160a01b0381168103620001aa57815290850190850162000085565b600080fd5b634e487b7160e01b600052604160045260246000fd5b6040519190601f01601f191682016001600160401b03811183821017620001af5760405256fe608060405260043610156200001357600080fd5b6000803560e01c80631a35ec5414620004665780632b4b500514620003ca5780632ff919e1146200039f57806334eaeeb914620003745780633d9d2f8414620003495780633dcc4954146200031e57806368a35e84146200012a5780638da5cb5b1462000101578063cc674d0314620000d65763d047ef0e146200009657600080fd5b34620000d3576020366003190112620000d3576004356005811015620000cf57600601546040516001600160a01b039091168152602090f35b5080fd5b80fd5b5034620000d35780600319360112620000d3576001546040516001600160a01b039091168152602090f35b5034620000d35780600319360112620000d357546040516001600160a01b039091168152602090f35b5034620000d357602080600319360112620000cf57600435906001600160401b038083116200031a57366023840112156200031a57826004013590811162000306578060051b9260405191620001838486018462000d4f565b82528282019081602480968301019136831162000302578601905b828210620002dc57505085546001600160a01b0394915084163303620002b0576005835103620002875750815115620002725782905116926bffffffffffffffffffffffff60a01b938460015416176001558151600110156200025e57826040830151168460025416176002558151600210156200025e57826060830151168460035416176003558151600310156200025e57826080830151168460045416176004558151600410156200025e575060a001511690600554161760055580f35b634e487b7160e01b60009081526032600452fd5b83634e487b7160e01b60005260326004526000fd5b6064906003866040519262461bcd60e51b84526004840152820152623632b760e91b6044820152fd5b6064906006866040519262461bcd60e51b845260048401528201526510b7bbb732b960d11b6044820152fd5b81356001600160a01b0381168103620002fd5781529085019085016200019e565b600080fd5b8780fd5b634e487b7160e01b84526041600452602484fd5b8380fd5b5034620000d35780600319360112620000d3576003546040516001600160a01b039091168152602090f35b5034620000d35780600319360112620000d3576002546040516001600160a01b039091168152602090f35b5034620000d35780600319360112620000d3576005546040516001600160a01b039091168152602090f35b5034620000d35780600319360112620000d3576004546040516001600160a01b039091168152602090f35b5034620000d35780600319360112620000d35760a0604051620003ed8162000d33565b36903760405190600681835b60058210620004455783856200040f8162000d33565b6040519190825b60058310620004245760a084f35b81516001600160a01b03168152600192909201916020918201910162000416565b82546001600160a01b031681526001928301929190910190602001620003f9565b5034620000d3576101c0366003190112620000d3576004356001600160a01b0381169003620000d3576024356001600160a01b0381168103620000cf57604435906001600160a01b038216820362000d1b573660e3121562000d1b576101806040526101c4608036821162000d175760c4905b82821062000d065750506001546040805163204a7f0760e21b60208201526004815290810192506001600160a01b03909116908083106001600160401b0384111762000cf25782604052604061024f820101918383106001600160401b0384111762000cde5781620005589161024f62000dce8739603f199462000d71565b03019084f0801562000b965760025460405163c0c53b8b60e01b60208201526001600160a01b039384166024820152918316604483018190528484166064840152921690620005b581608481015b03601f19810183528262000d4f565b6040519161024f83018381106001600160401b0382111762000cde5791620005e891849361024f6200101d863962000d71565b039084f0801562000b965760035460405163485cc95560e01b60208201526001600160a01b0360043581166024830152928316604480830182905282529492608082019216908083106001600160401b0384111762000cde5782604052608061024f820101918383106001600160401b0384111762000cca57816200067a9161024f6200126c8739607f199462000d71565b03019085f0801562000cbf5760048054604051630fd4b46d60e21b602082015291356001600160a01b039081166024840152604483018690529283166064808401829052356084808501919091523560a4808501919091523560c484015294921660808760e484015b6008821062000ca8575050506001600160a01b0384166101e483810191909152825261022080830192906001600160401b0384118285101762000c94578360405261024f820101918383106001600160401b0384111762000c945781620007589161024f620014bb873961021f199462000d71565b03019086f092831562000c895760055460405163c0c53b8b60e01b60208201526001600160a01b03600435811660248301528481166044830152878116606483015290911690620007ad8160848101620005a6565b6040519161024f83018381106001600160401b0382111762000c755791620007e091849361024f6200170a863962000d71565b039087f0801562000c6a576001600160a01b031692823b1562000b6f57604051634c1d96ab60e11b815260048101879052878160248183885af1801562000c5f5762000c49575b50823b1562000b6f57604051634c1d96ab60e11b81526001600160a01b03861660048201528790818160248183895af1801562000b735762000c31575b5050823b1562000b6f5786604051634c1d96ab60e11b8152856004820152818160248183895af1801562000b735762000c19575b5050853b1562000b6f5786604051637422603d60e11b81528360048201528181602481838c5af1801562000b735762000c01575b5050853b1562000b6f5786604051636dcea85f60e01b81528560048201528181602481838c5af1801562000b735762000be9575b5050823b1562000b6f5760405163f2fde38b60e01b8082526001600160a01b038316600483015288918281602481838a5af190811562000b9657839162000bd1575b5050873b15620000cf576040518181526001600160a01b03841660048201528281602481838d5af190811562000b9657839162000bb9575b5050833b15620000cf576040518181526001600160a01b0384166004820152828160248183895af190811562000b9657839162000ba1575b50506001600160a01b0387163b15620000cf576040518181526001600160a01b03848116600483015283908290602490829084908d165af190811562000b9657839162000b7e575b5050853b15620000cf576040519081526001600160a01b03831660048201528181602481838a5af1801562000b735762000b57575b505060405160a081018181106001600160401b0382111762000b415760405283815286602082015282604082015260018060a01b0386166060820152846080820152965b6005811062000b225750604080516001600160a01b03858116825288811660208301528481169282019290925286821660608201528582166080820152969750949562000b1e9591909116907fcbf9f01d4ad8266c9459a8a93ad4cbb60f1d39a5ee8de6c0ee64a37b6dd483d99060a090a2604080516001600160a01b03938416815296831660208801529082169086015292831660608501529091166080830152819060a0820190565b0390f35b87516001600160a01b0316600682015560209097019660010162000a73565b634e487b7160e01b600052604160045260246000fd5b62000b629062000d1f565b62000b6f57863862000a2f565b8680fd5b6040513d84823e3d90fd5b62000b899062000d1f565b620000cf578138620009fa565b6040513d85823e3d90fd5b62000bac9062000d1f565b620000cf578138620009b2565b62000bc49062000d1f565b620000cf5781386200097a565b62000bdc9062000d1f565b620000cf57813862000942565b62000bf49062000d1f565b62000b6f57863862000900565b62000c0c9062000d1f565b62000b6f578638620008cc565b62000c249062000d1f565b62000b6f57863862000898565b62000c3c9062000d1f565b62000b6f57863862000864565b62000c579097919762000d1f565b953862000827565b6040513d8a823e3d90fd5b6040513d88823e3d90fd5b634e487b7160e01b8a52604160045260248afd5b6040513d87823e3d90fd5b634e487b7160e01b89526041600452602489fd5b6020806001928551815201930191019091620006e3565b6040513d86823e3d90fd5b634e487b7160e01b88526041600452602488fd5b634e487b7160e01b87526041600452602487fd5b634e487b7160e01b86526041600452602486fd5b8135815260209182019101620004d9565b8480fd5b8280fd5b6001600160401b03811162000b4157604052565b60a081019081106001600160401b0382111762000b4157604052565b90601f801991011681019081106001600160401b0382111762000b4157604052565b6001600160a01b039091168152604060208083018290528351918301829052939260005b82811062000db857505060609293506000838284010152601f8019910116010190565b81810186015184820160600152850162000d9556fe608060405261024f803803806100148161015b565b9283398101604082820312610156578151906001600160a01b0382168083036101565760208481015190946001600160401b038211610156570182601f8201121561015657805161006c61006782610196565b61015b565b9381855286828401011161015657859160005b8281106101435750506000908401909101527f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc80546001600160a01b03191690911790558051806100d9575b604051609d90816101b28239f35b60009284849301905af43d1561013e573d6100f661006782610196565b9081526000833d92013e5b1561010e578080806100cb565b6064906040519062461bcd60e51b8252600482015260096024820152681a5b9a5d0819985a5b60ba1b6044820152fd5b610101565b818101840151868201850152830161007f565b600080fd5b6040519190601f01601f191682016001600160401b0381118382101761018057604052565b634e487b7160e01b600052604160045260246000fd5b6001600160401b03811161018057601f01601f19166020019056fe608060405236156012575b6010601c565b005b6018601c565b600a565b507f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc54600090819081906001600160a01b0316368280378136915af43d82803e156064573d90f35b80fdfea2646970667358221220d4f4c074a19468ebc07241c8637a20753c9f18456ced5ca667e1a60ea033f0db64736f6c63430008110033608060405261024f803803806100148161015b565b9283398101604082820312610156578151906001600160a01b0382168083036101565760208481015190946001600160401b038211610156570182601f8201121561015657805161006c61006782610196565b61015b565b9381855286828401011161015657859160005b8281106101435750506000908401909101527f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc80546001600160a01b03191690911790558051806100d9575b604051609d90816101b28239f35b60009284849301905af43d1561013e573d6100f661006782610196565b9081526000833d92013e5b1561010e578080806100cb565b6064906040519062461bcd60e51b8252600482015260096024820152681a5b9a5d0819985a5b60ba1b6044820152fd5b610101565b818101840151868201850152830161007f565b600080fd5b6040519190601f01601f191682016001600160401b0381118382101761018057604052565b634e487b7160e01b600052604160045260246000fd5b6001600160401b03811161018057601f01601f19166020019056fe608060405236156012575b6010601c565b005b6018601c565b600a565b507f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc54600090819081906001600160a01b0316368280378136915af43d82803e156064573d90f35b80fdfea2646970667358221220d4f4c074a19468ebc07241c8637a20753c9f18456ced5ca667e1a60ea033f0db64736f6c63430008110033608060405261024f803803806100148161015b565b9283398101604082820312610156578151906001600160a01b0382168083036101565760208481015190946001600160401b038211610156570182601f8201121561015657805161006c61006782610196565b61015b565b9381855286828401011161015657859160005b8281106101435750506000908401909101527f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc80546001600160a01b03191690911790558051806100d9575b604051609d90816101b28239f35b60009284849301905af43d1561013e573d6100f661006782610196565b9081526000833d92013e5b1561010e578080806100cb565b6064906040519062461bcd60e51b8252600482015260096024820152681a5b9a5d0819985a5b60ba1b6044820152fd5b610101565b818101840151868201850152830161007f565b600080fd5b6040519190601f01601f191682016001600160401b0381118382101761018057604052565b634e487b7160e01b600052604160045260246000fd5b6001600160401b03811161018057601f01601f19166020019056fe608060405236156012575b6010601c565b005b6018601c565b600a565b507f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc54600090819081906001600160a01b0316368280378136915af43d82803e156064573d90f35b80fdfea2646970667358221220d4f4c074a19468ebc07241c8637a20753c9f18456ced5ca667e1a60ea033f0db64736f6c63430008110033608060405261024f803803806100148161015b565b9283398101604082820312610156578151906001600160a01b0382168083036101565760208481015190946001600160401b038211610156570182601f8201121561015657805161006c61006782610196565b61015b565b9381855286828401011161015657859160005b8281106101435750506000908401909101527f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc80546001600160a01b03191690911790558051806100d9575b604051609d90816101b28239f35b60009284849301905af43d1561013e573d6100f661006782610196565b9081526000833d92013e5b1561010e578080806100cb565b6064906040519062461bcd60e51b8252600482015260096024820152681a5b9a5d0819985a5b60ba1b6044820152fd5b610101565b818101840151868201850152830161007f565b600080fd5b6040519190601f01601f191682016001600160401b0381118382101761018057604052565b634e487b7160e01b600052604160045260246000fd5b6001600160401b03811161018057601f01601f19166020019056fe608060405236156012575b6010601c565b005b6018601c565b600a565b507f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc54600090819081906001600160a01b0316368280378136915af43d82803e156064573d90f35b80fdfea2646970667358221220d4f4c074a19468ebc07241c8637a20753c9f18456ced5ca667e1a60ea033f0db64736f6c63430008110033608060405261024f803803806100148161015b565b9283398101604082820312610156578151906001600160a01b0382168083036101565760208481015190946001600160401b038211610156570182601f8201121561015657805161006c61006782610196565b61015b565b9381855286828401011161015657859160005b8281106101435750506000908401909101527f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc80546001600160a01b03191690911790558051806100d9575b604051609d90816101b28239f35b60009284849301905af43d1561013e573d6100f661006782610196565b9081526000833d92013e5b1561010e578080806100cb565b6064906040519062461bcd60e51b8252600482015260096024820152681a5b9a5d0819985a5b60ba1b6044820152fd5b610101565b818101840151868201850152830161007f565b600080fd5b6040519190601f01601f191682016001600160401b0381118382101761018057604052565b634e487b7160e01b600052604160045260246000fd5b6001600160401b03811161018057601f01601f19166020019056fe608060405236156012575b6010601c565b005b6018601c565b600a565b507f360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc54600090819081906001600160a01b0316368280378136915af43d82803e156064573d90f35b80fdfea2646970667358221220d4f4c074a19468ebc07241c8637a20753c9f18456ced5ca667e1a60ea033f0db64736f6c63430008110033a2646970667358221220d4d4fb5d737ce57d2fcf27fc3a832f3b9002a3973fe8de4809267e9009bd0d1d64736f6c63430008110033"};
+
+/* ============================================================
+   项目列表
+============================================================ */
+async function loadProjects(){
+  const el = $("boxList");
+  el.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>加载项目中…</div>`;
+  try {
+    const projs = [...userProjects].reverse();
+    const rows = [];
+    for (const p of projs) {
+      let info = "本地记录";
+      try {
+        const box = new ethers.Contract(p.box, ABI.XPowerBox, await getProvider());
+        const b1 = await readBox(box, 1);
+        info = `${fmt(fromWei(b1.price, p.dec||18), 6)} /盒 · 已开 ${Number(b1.sold)}/${Number(b1.total)}`;
+      } catch(e) { info = "读取失败"; }
+      rows.push(`
+        <div class="pcard" onclick="go('p/${p.box}')">
+          <div class="pname"><span class="ptype pt${(p.token||"").length%8}">${PARTS_ICONS[(p.token||"").length%8]}</span>${esc(p.name)}</div>
+          <div class="pmeta">${info}</div>
+          <div class="pmeta">创建者：<span class="mono">${shortAddr(p.creator || walletAddr)}</span></div>
+          <div class="paddr">${esc(p.box)}</div>
+          <div class="pstat"><span class="pill c">已上线</span></div>
+        </div>`);
+    }
+    el.innerHTML = rows.length ? rows.join("") : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>还没有项目<br><br><button class="btn" onclick="go('create')">去发射台创建</button></div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>加载失败：${esc(e.message)}</div>`;
+  }
+}
+
+/* ============================================================
+   项目详情页
+============================================================ */
+let projectAddr = null, projectMeta = null, factoryAddr = null;
+const ERC20_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address,address) view returns (uint256)",
+  "function approve(address,uint256) returns (bool)",
+  "function decimals() view returns (uint8)",
+  "function totalSupply() view returns (uint256)",
+  "function symbol() view returns (string)"
+];
+async function loadProject(boxAddr){
+  const body = $("projectBody");
+  body.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M7 2h10M7 22h10M9 2v4l4 6-4 6v4M15 2v4l-2 3"/></svg></div>加载项目…</div>`;
+  const p = userProjects.find(x => x.box === boxAddr.toLowerCase());
+  try {
+    const prov = await getProvider();
+    const box = new ethers.Contract(boxAddr, ABI.XPowerBox, prov);
+    const [payToken, partsAddr, miningAddr, boxCount, maxOpen] = await Promise.all([
+      box.payToken(), box.parts(), box.poolAddr(), box.boxCount(), box.MAX_OPEN()
+    ]);
+    const b1 = await readBox(box, 1);
+    const mining = new ethers.Contract(miningAddr, ABI.XPowerMining, prov);
+    const circuitAddr = await mining.circ();
+    const circuit = new ethers.Contract(circuitAddr, ABI.XPowerCircuit, prov);
+    const [xpwrAddr, marketAddr, creator] = await Promise.all([circuit.xpwr(), circuit.market(), circuit.creator()]);
+    projectMeta = { box: boxAddr, token: payToken, total: Number(b1.total), sold: Number(b1.sold), price: b1.price, openMax: Number(maxOpen), boxCount: Number(boxCount), creator, parts: partsAddr, mining: miningAddr, market: marketAddr, circuit: circuitAddr, xpwr: xpwrAddr, dec: p ? (p.dec||18) : 18 };
+    const tk = new ethers.Contract(payToken, ERC20_ABI, prov);
+    let poolBal = "—", mined = "—";
+    if (tk) {
+      try { const [pb, mc] = await Promise.all([tk.balanceOf(miningAddr), tk.balanceOf(boxAddr)]); poolBal = fmt(fromWei(pb, projectMeta.dec)); mined = fmt(fromWei(mc, projectMeta.dec)); } catch(e){}
+    }
+    body.innerHTML = `
+      <button class="btn ghost sm" onclick="go('boxes')" style="margin-bottom:12px">← 返回列表</button>
+      <div class="box-hero">
+        <div>
+          <div class="cover" id="projCover"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.2" style="opacity:.4"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>
+          <div class="mono copyable" onclick="copyText('${boxAddr}')" title="点击复制" style="margin-top:10px;font-size:11px;color:var(--acc)">${boxAddr}</div>
+        </div>
+        <div>
+          <h1 style="margin-bottom:6px">${esc(p ? p.name : "项目")}</h1>
+          <div class="sub" style="margin-bottom:12px">创建者：<span class="mono copyable" onclick="copyText('${creator}')">${shortAddr(creator)}</span></div>
+          <div class="kv"><span class="k">盲盒总量</span><span class="v">${projectMeta.total}</span></div>
+          <div class="kv"><span class="k">已开启</span><span class="v">${projectMeta.sold}</span></div>
+          <div class="kv"><span class="k">单价</span><span class="v">${fmt(fromWei(projectMeta.price, projectMeta.dec), 6)} 项目代币</span></div>
+          <div class="kv"><span class="k">分红池余额</span><span class="v g">${poolBal}</span></div>
+          <div class="kv"><span class="k">抽卡沉淀</span><span class="v c">${mined}</span></div>
+        </div>
+      </div>
+      <div style="margin:14px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button onclick="fixBox()" style="background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer">修复盲盒合约（旧版权重缺陷）</button>
+        <span style="font-size:12px;opacity:.6">老项目盲盒权重为 0 无法开盒，一键部署新版实现并升级（需钱包签名 2 次）</span>
+      </div>
+      <div class="tabs" style="margin-top:18px">
+        <button class="tab on" data-tab="open" onclick="projTab('open', this)">抽盲盒</button>
+        <button class="tab" data-tab="asm" onclick="projTab('asm', this)">组装</button>
+        <button class="tab" data-tab="stake" onclick="projTab('stake', this)">质押挖矿</button>
+        <button class="tab" data-tab="market" onclick="projTab('market', this)">市场</button>
+      </div>
+      <div id="projTabBody"></div>`;
+    projTab("open");
+  } catch(e) {
+    body.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>项目读取失败：${esc(e.message)}<br><span style="font-size:12px;color:var(--faint)">请确认该合约是本平台创建的项目</span></div>`;
+  }
+}
+
+function projTab(t, btn){
+  document.querySelectorAll("#projectBody .tab").forEach(x => x.classList.remove("on"));
+  if (btn) btn.classList.add("on");
+  const b = $("projTabBody");
+  if (t === "open") renderOpen(b);
+  if (t === "asm") renderAsm(b);
+  if (t === "stake") renderStake(b);
+  if (t === "market") renderMarket(b);
+}
+
+
+/* ============================================================
+   项目页 · 抽盲盒
+============================================================ */
+let openBoxes = [];
+async function renderOpen(b){
+  if (!projectMeta) return;
+  const dec = projectMeta.dec;
+  b.innerHTML = `<div class="empty" style="padding:14px"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="#22d3ee" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="#22d3ee" stroke="none"/></svg></div>读取盲盒…</div>`;
+  try {
+    const prov = await getProvider();
+    const box = new ethers.Contract(projectMeta.box, ABI.XPowerBox, prov);
+    openBoxes = [];
+    for (let i = 1; i <= projectMeta.boxCount; i++) openBoxes.push(await readBox(box, i));
+    b.innerHTML = `
+      <div class="card" style="margin-bottom:12px">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div class="sub">消耗项目代币抽盲盒：90% 进入分红池（质押挖矿奖励来源），10% 归创建者</div>
+            <div class="sub" style="margin-top:4px">选择盲盒：</div>
+          </div>
+          <div class="row">
+            <select id="openSel" onchange="openCalc()">${openBoxes.map((bx, i) => {
+              const rem = Number(bx.total) - Number(bx.sold);
+              return `<option value="${i}">#${i+1} · ${fmt(fromWei(bx.price, dec), 4)} 币/盒 · 余 ${rem}</option>`;
+            }).join("")}</select>
+            <input id="openN" type="number" value="1" min="1" max="${projectMeta.openMax || 100}" style="width:90px" oninput="openCalc()">
+            <button class="btn" id="btnOpen">开盒</button>
+          </div>
+        </div>
+        <div id="openCost" class="sub" style="margin-top:8px">本次消耗：—</div>
+      </div>
+      <div id="openResult"><div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="#22d3ee" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="#22d3ee" stroke="none"/></svg></div>点击开盒，随机抽取 8 类部件（按项目权重）</div></div>`;
+    openCalc();
+    $("btnOpen").onclick = doOpen;
+  } catch(e) {
+    b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>盲盒读取失败：${esc(e.message)}</div>`;
+  }
+}
+function openCalc(){
+  if (!projectMeta || !openBoxes.length) return;
+  const n = Math.max(1, Number($("openN").value) || 1);
+  const bx = openBoxes[Number($("openSel").value)];
+  if (!bx) return;
+  $("openCost").textContent = "本次消耗：" + fmt(fromWei(bx.price * BigInt(n), projectMeta.dec), 6) + " 项目代币";
+}
+async function doOpen(){
+  if (!walletAddr) { toast("请先连接钱包", "err"); return; }
+  const n = Math.max(1, Number($("openN").value) || 1);
+  const bi = Number($("openSel").value) || 0;
+  const bx = openBoxes[bi];
+  if (!bx) { toast("请选择盲盒", "err"); return; }
+  const cost = bx.price * BigInt(n);
+  try {
+    const prov = await getProvider();
+    const tk = new ethers.Contract(projectMeta.token, ERC20_ABI, prov);
+    const signer = await (window.ethereum ? pickProvider() : prov).getSigner();
+    const bal = await tk.balanceOf(walletAddr);
+    if (bal < cost) { toast("项目代币余额不足", "err"); return; }
+    const allw = await tk.allowance(walletAddr, projectMeta.box);
+    if (allw < cost) {
+      toast("请先授权项目代币给盲盒合约", "err");
+      const tkSigner = new ethers.Contract(projectMeta.token, ERC20_ABI, signer);
+      qstate.steps = [];
+      qAdd("授权项目代币", async () => {
+        const tx = await tkSigner.approve(projectMeta.box, ethers.MaxUint256);
+        await tx.wait();
+        return "已授权";
+      });
+      await qRun();
+      if (qstate.steps.some(s => s.status === "err")) { toast("授权失败，已中止开盒", "err"); return; }
+    }
+    const box = new ethers.Contract(projectMeta.box, ABI.XPowerBox, signer);
+    toast("开盒中，请在钱包确认…");
+    const tx = await box.openBox(bi + 1, n, { from: walletAddr, gasLimit: 3000000 });
+    await tx.wait();
+    toast("开盒成功", "ok");
+    renderOpen($("projTabBody"));
+    refreshProjectStats();
+  } catch(e) {
+    toast("开盒失败：" + (e.message || ""), "err");
+  }
+}
+async function refreshProjectStats(){
+  try {
+    const prov = await getProvider();
+    const box = new ethers.Contract(projectMeta.box, ABI.XPowerBox, prov);
+    const b1 = await readBox(box, 1);
+    projectMeta.sold = Number(b1.sold);
+    document.querySelectorAll("#projectBody .kv").forEach(k => {
+      if (k.querySelector(".k") && k.querySelector(".k").textContent === "已开启") k.querySelector(".v").textContent = Number(b1.sold);
+    });
+  } catch(e){}
+}
+
+/* ============================================================
+   项目页 · 组装（自选品质）
+============================================================ */
+async function renderAsm(b){
+  if (!walletAddr) { b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2.4-2.4 2.8-2.8z"/></svg></div>连接钱包后查看你的部件</div>`; return; }
+  b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M7 2h10M7 22h10M9 2v4l4 6-4 6v4M15 2v4l-2 3"/></svg></div>读取部件…</div>`;
+  try {
+    const prov = await getProvider();
+    const parts = new ethers.Contract(projectMeta.parts, ABI.XPowerParts, prov);
+    const bal = await parts.bal(1, walletAddr); // 每类部件 8 种，bal[partType][owner]
+    let total = 0n;
+    const byType = [];
+    for (let t = 0; t < 8; t++) {
+      const c = await parts.bal(t + 1, walletAddr);
+      byType.push(c);
+      total += c;
+    }
+    const hasAny = total > 0n;
+    if (!hasAny) { b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2.4-2.4 2.8-2.8z"/></svg></div>还没有部件<br><br><button class="btn" onclick="projTab('open', document.querySelector('#projectBody .tab'))">去抽盲盒</button></div>`; return; }
+    // 可组装数量 = min(每类数量)
+    let maxAsm = null;
+    for (const c of byType) { maxAsm = maxAsm === null ? c : (c < maxAsm ? c : maxAsm); }
+    b.innerHTML = `
+      <div class="card" style="margin-bottom:12px">
+        <h2>我的部件</h2>
+        <div class="parts-grid">${byType.map((c, i) => `
+          <div class="part-item"><span class="ptype pt${i}">${PARTS_ICONS[i]}</span><span class="nm">${PARTS_NAMES[i]}</span><span class="qty">×${Number(c)}</span></div>`).join("")}</div>
+        <div class="sub" style="margin-top:10px">可组装整机：<b style="color:var(--acc)">${Number(maxAsm)}</b> 台（8 类部件各需 1 个）</div>
+      </div>
+      <div class="card">
+        <h2>组装整机</h2>
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div class="sub">消耗 <b>10 XPR</b> / 台（归平台地址），自选品质组装</div>
+            <div class="row" style="margin-top:8px">
+              <label class="sub">数量：</label>
+              <input id="asmN" type="number" value="1" min="1" max="${Number(maxAsm) || 1}" style="width:80px">
+              <label class="sub">品质档位：</label>
+              <select id="asmTier">
+                <option value="1">T1 普通</option>
+                <option value="2">T2 进阶</option>
+                <option value="3">T3 精良</option>
+                <option value="4">T4 稀有</option>
+                <option value="5">T5 传说</option>
+              </select>
+              <button class="btn" id="btnAsm">组装</button>
+            </div>
+          </div>
+        </div>
+        <div id="asmInfo" class="sub" style="margin-top:10px">需要 XPR：${fmt(fromWei(10n * BigInt(Math.max(1, Number($("asmN")||1))), 18), 2)}</div>
+      </div>`;
+    $("asmN").oninput = () => { $("asmInfo").textContent = "需要 XPR：" + fmt(fromWei(10n * BigInt(Math.max(1, Number($("asmN").value) || 1)), 18), 2); };
+    $("btnAsm").onclick = doAssemble;
+  } catch(e) {
+    b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>部件读取失败：${esc(e.message)}</div>`;
+  }
+}
+async function doAssemble(){
+  if (!walletAddr) { toast("请先连接钱包", "err"); return; }
+  const n = Math.max(1, Number($("asmN").value) || 1);
+  const tier = Number($("asmTier").value);
+  const xprNeeded = 10n * BigInt(n) * 10n ** 18n;
+  try {
+    const prov = await getProvider();
+    const signer = await (window.ethereum ? pickProvider() : prov).getSigner();
+    const xpr = new ethers.Contract(XPWR, ERC20_ABI, prov);
+    const bal = await xpr.balanceOf(walletAddr);
+    if (bal < xprNeeded) { toast("XPR 余额不足（需要 " + fmt(fromWei(xprNeeded, 18), 2) + " XPR）", "err"); return; }
+    const allw = await xpr.allowance(walletAddr, projectMeta.circuit);
+    if (allw < xprNeeded) {
+      const xprSigner = new ethers.Contract(XPWR, ERC20_ABI, signer);
+      qstate.steps = [];
+      qAdd("授权 XPR 给组装合约", async () => {
+        const tx = await xprSigner.approve(projectMeta.circuit, ethers.MaxUint256);
+        await tx.wait();
+        return "已授权";
+      });
+      await qRun();
+      if (qstate.steps.some(s => s.status === "err")) { toast("授权失败，已中止组装", "err"); return; }
+    }
+    const circ = new ethers.Contract(projectMeta.circuit, ABI.XPowerCircuit, signer);
+    toast("组装中，请在钱包确认…");
+    const tx = await circ.batchAssembleTier(n, tier, { from: walletAddr, gasLimit: 3000000 });
+    await tx.wait();
+    toast("组装成功 " + n + " 台", "ok");
+    renderAsm($("projTabBody"));
+  } catch(e) {
+    toast("组装失败：" + (e.message || ""), "err");
+  }
+}
+
+/* ============================================================
+   项目页 · 质押挖矿
+============================================================ */
+async function renderStake(b){
+  if (!walletAddr) { b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M14 6l4-4 4 4-4 4M14 6l-3 3"/><path d="M11 9L2 18l4 4 9-9"/></svg></div>连接钱包后查看质押</div>`; return; }
+  b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M7 2h10M7 22h10M9 2v4l4 6-4 6v4M15 2v4l-2 3"/></svg></div>读取质押数据…</div>`;
+  try {
+    const prov = await getProvider();
+    const mining = new ethers.Contract(projectMeta.mining, ABI.XPowerMining, prov);
+    const circ = new ethers.Contract(projectMeta.circuit, ABI.XPowerCircuit, prov);
+    const ids = await circ.pcsOfOwner(walletAddr);
+    const stakedIds = [], idleIds = [];
+    for (const id of ids) {
+      const s = await circ.pcs(id);
+      if (s.staked) stakedIds.push(id); else idleIds.push(id);
+    }
+    let myHash = 0n, totalShare = 0n, pending = 0n;
+    try { totalShare = await mining.totalShare(); } catch(e){}
+    const stakedList = await mining.stakedPCsOf(walletAddr);
+    const uniqStaked = [...new Set([...stakedIds.map(String), ...stakedList.map(String)])];
+    for (const id of uniqStaked) {
+      try { myHash += BigInt(await mining.stakeHash(id)); } catch(e){}
+      try { pending += BigInt(await mining.earned(id)); } catch(e){}
+    }
+    const pcInfo = async (id) => {
+      const s = await circ.pcs(id);
+      return { id, tier: Number(s.tier), hash: Number(s.hashRate) };
+    };
+    b.innerHTML = `
+      <div class="statbar">
+        <div class="stat"><div class="k">质押算力</div><div class="v c">${fmt(Number(myHash), 0)} H</div></div>
+        <div class="stat"><div class="k">份额占比</div><div class="v">${totalShare ? fmt(Number(myHash) * 100 / Number(totalShare), 2) + "%" : "—"}</div></div>
+        <div class="stat"><div class="k">待领取奖励</div><div class="v g">${fmt(fromWei(pending, projectMeta.dec), 4)}</div></div>
+        <div class="stat"><div class="k">质押台数</div><div class="v">${stakedIds.length}</div></div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <h2>质押中的 PC（${stakedIds.length}）</h2>
+        ${stakedIds.length ? `<div class="pc-grid">${(await Promise.all(stakedIds.map(pcInfo))).map(p => `
+          <div class="pc-item"><div class="pid">#${p.id}</div><div class="line"><span>T${p.tier}</span><b>${fmt(p.hash, 0)} H</b></div></div>`).join("")}</div>
+          <div class="row" style="margin-top:12px"><button class="btn ghost sm" id="btnUnstake">批量解押</button></div>` : `<div class="empty" style="padding:16px">暂无质押</div>`}
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <h2>待机中的 PC（${idleIds.length}）</h2>
+        ${idleIds.length ? `<div class="pc-grid">${(await Promise.all(idleIds.slice(0, 30).map(pcInfo))).map(p => `
+          <div class="pc-item"><div class="pid">#${p.id}</div><div class="line"><span>T${p.tier}</span><b>${fmt(p.hash, 0)} H</b></div></div>`).join("")}${idleIds.length > 30 ? `<div class="sub" style="margin-top:8px">…共 ${idleIds.length} 台</div>` : ""}</div>
+          <div class="row" style="margin-top:12px"><button class="btn" id="btnStake">批量质押</button></div>` : `<div class="empty" style="padding:16px">暂无待机 PC</div>`}
+      </div>
+      <div class="card">
+        <h2>领取奖励</h2>
+        <div class="row" style="justify-content:space-between">
+          <div class="sub">质押按算力份额分红，6 小时一个周期；解押后算力即时退出</div>
+          <div class="row"><button class="btn gold sm" id="btnClaim">领取</button></div>
+        </div>
+      </div>`;
+    if (stakedIds.length) $("btnUnstake").onclick = () => doUnstake(stakedIds);
+    if (idleIds.length) $("btnStake").onclick = () => doStake(idleIds);
+    $("btnClaim").onclick = doClaim;
+  } catch(e) {
+    b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>质押数据读取失败：${esc(e.message)}</div>`;
+  }
+}
+async function doStake(ids){
+  const prov = await getProvider();
+  const mining = new ethers.Contract(projectMeta.mining, ABI.XPowerMining, await (window.ethereum ? pickProvider() : prov).getSigner());
+  toast("质押中，请在钱包确认…");
+  try {
+    const tx = await mining.batchStake(ids.map(String), { from: walletAddr, gasLimit: 3000000 });
+    await tx.wait();
+    toast("质押成功 " + ids.length + " 台", "ok");
+    renderStake($("projTabBody"));
+  } catch(e) { toast("质押失败：" + (e.message || ""), "err"); }
+}
+async function doUnstake(ids){
+  const prov = await getProvider();
+  const mining = new ethers.Contract(projectMeta.mining, ABI.XPowerMining, await (window.ethereum ? pickProvider() : prov).getSigner());
+  toast("解押中，请在钱包确认…");
+  try {
+    const tx = await mining.batchUnstake(ids.map(String), { from: walletAddr, gasLimit: 3000000 });
+    await tx.wait();
+    toast("解押成功", "ok");
+    renderStake($("projTabBody"));
+  } catch(e) { toast("解押失败：" + (e.message || ""), "err"); }
+}
+async function doClaim(){
+  const prov = await getProvider();
+  const mining = new ethers.Contract(projectMeta.mining, ABI.XPowerMining, await (window.ethereum ? pickProvider() : prov).getSigner());
+  try {
+    const stIds = (await mining.stakedPCsOf(walletAddr)).map(String);
+    if (!stIds.length) { toast("没有可领取的质押", "err"); return; }
+    toast("领取中，请在钱包确认…");
+    const tx = await mining.claim(stIds, { from: walletAddr, gasLimit: 3000000 });
+    await tx.wait();
+    toast("领取成功", "ok");
+    renderStake($("projTabBody"));
+  } catch(e) { toast("领取失败：" + (e.message || ""), "err"); }
+}
+
+/* ============================================================
+   项目页 · 市场（P2P）
+============================================================ */
+async function renderMarket(b){
+  b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M7 2h10M7 22h10M9 2v4l4 6-4 6v4M15 2v4l-2 3"/></svg></div>加载市场…</div>`;
+  try {
+    const prov = await getProvider();
+    const market = new ethers.Contract(projectMeta.market, ABI.XPowerMarket, prov);
+    const orderCount = Number(await market.orderCount());
+    const orders = [];
+    for (let i = 1; i <= orderCount; i++) {
+      try { orders.push({ oid: i, ...(await market.orders(i)) }); } catch(e){}
+      if (orders.length >= 80) break;
+    }
+    const pcs = orders.filter(o => Number(o.kind) === 2 && o.active);
+    const parts = orders.filter(o => Number(o.kind) === 1 && o.active);
+    const mine = walletAddr ? orders.filter(o => o.seller.toLowerCase() === walletAddr.toLowerCase()) : [];
+    marketTabData = { pcs, parts, mine };
+    b.innerHTML = `
+      <div class="tabs">
+        <button class="tab on" data-mt="pc" onclick="marketTab('pc', this)">PC 市场（${pcs.length}）</button>
+        <button class="tab" data-mt="part" onclick="marketTab('part', this)">部件市场（${parts.length}）</button>
+        <button class="tab" data-mt="mine" onclick="marketTab('mine', this)">我的挂单（${mine.length}）</button>
+      </div>
+      <div id="marketBody">${renderMarketList("pc", pcs, parts, mine)}</div>`;
+  } catch(e) {
+    b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>市场读取失败：${esc(e.message)}</div>`;
+  }
+}
+let marketTabData = { pcs: [], parts: [], mine: [] };
+function marketTab(t, btn){
+  document.querySelectorAll("#projectBody .tab[data-mt]").forEach(x => x.classList.remove("on"));
+  if (btn) btn.classList.add("on");
+  $("marketBody").innerHTML = renderMarketList(t, marketTabData.pcs, marketTabData.parts, marketTabData.mine);
+}
+function renderMarketList(t, pcs, parts, mine){
+  if (t === "pc") {
+    if (!pcs.length) return `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>暂无 PC 挂单</div>`;
+    return `<div class="orders">${pcs.map(o => `
+      <div class="order">
+        <div class="ob"><b>PC #${Number(o.sub)}</b> <span class="mono" style="font-size:11px">× ${Number(o.qty)}</span></div>
+        <div class="ob"><span class="price">${fmt(fromWei(o.price, projectMeta.dec), 4)}</span> 项目代币</div>
+        <button class="btn sm" onclick="buyOrder(${o.oid})">购买</button>
+      </div>`).join("")}</div>`;
+  }
+  if (t === "part") {
+    if (!parts.length) return `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M4 5a2 2 0 0 1 2-2h4v3a2 2 0 0 0 4 0V3h4a2 2 0 0 1 2 2v4h-3a2 2 0 0 0 0 4h3v4a2 2 0 0 1-2 2h-4v-3a2 2 0 0 0-4 0v3H6a2 2 0 0 1-2-2v-4h3a2 2 0 0 0 0-4H4V5z"/></svg></div>暂无部件挂单</div>`;
+    return `<div class="orders">${parts.map(o => `
+      <div class="order">
+        <div class="ob"><span class="ptype pt${Number(o.sub)-1}">${PARTS_ICONS[Number(o.sub)-1]}</span> <b>${PARTS_NAMES[Number(o.sub)-1]}</b> × <span class="qty">${Number(o.qty)}</span></div>
+        <div class="ob"><span class="price">${fmt(fromWei(o.price, projectMeta.dec), 4)}</span> /件</div>
+        <button class="btn sm" onclick="buyOrder(${o.oid})">购买</button>
+      </div>`).join("")}</div>`;
+  }
+  if (!walletAddr) return `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M3 7h18a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M3 7V5a2 2 0 0 1 2-2h10v4M16 13h2"/></svg></div>连接钱包查看我的挂单</div>`;
+  if (!mine.length) return `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div>暂无挂单<br><br><button class="btn" onclick="renderSellPanel()">去挂单</button></div>`;
+  return `<div class="orders">${mine.map(o => `
+    <div class="order">
+      <div class="ob">${Number(o.kind) === 2 ? "PC #" + Number(o.sub) : "部件 ×" + Number(o.qty)}</div>
+      <div class="ob"><span class="price">${fmt(fromWei(o.price, projectMeta.dec), 4)}</span></div>
+      <button class="btn ghost sm" onclick="cancelOrder(${o.oid})">撤单</button>
+    </div>`).join("")}</div>
+    <div style="margin-top:10px"><button class="btn sm" onclick="renderSellPanel()">+ 挂单</button></div>`;
+}
+async function buyOrder(oid){
+  if (!walletAddr) { toast("请先连接钱包", "err"); return; }
+  try {
+    const prov = await getProvider();
+    const market = new ethers.Contract(projectMeta.market, ABI.XPowerMarket, prov);
+    const o = await market.orders(oid);
+    if (!o.active) { toast("该订单已成交或已撤单", "err"); return; }
+    const price = o.price * o.qty;
+    const tk = new ethers.Contract(projectMeta.token, ERC20_ABI, prov);
+    const allw = await tk.allowance(walletAddr, projectMeta.market);
+    if (allw < price) {
+      const tkSigner = new ethers.Contract(projectMeta.token, ERC20_ABI, signer);
+      qstate.steps = [];
+      qAdd("授权项目代币给市场", async () => {
+        const tx = await tkSigner.approve(projectMeta.market, ethers.MaxUint256);
+        await tx.wait(); return "已授权";
+      });
+      await qRun();
+      if (qstate.steps.some(s => s.status === "err")) { toast("授权失败，已中止购买", "err"); return; }
+    }
+    const signer = await (window.ethereum ? pickProvider() : prov).getSigner();
+    const m2 = new ethers.Contract(projectMeta.market, ABI.XPowerMarket, signer);
+    toast("购买中，请在钱包确认…");
+    const tx = await m2.buy(oid, { from: walletAddr, gasLimit: 2000000 });
+    await tx.wait();
+    toast("购买成功", "ok");
+    renderMarket($("projTabBody"));
+  } catch(e) { toast("购买失败：" + (e.message || ""), "err"); }
+}
+async function cancelOrder(oid){
+  try {
+    const prov = await getProvider();
+    const market = new ethers.Contract(projectMeta.market, ABI.XPowerMarket, await (window.ethereum ? pickProvider() : prov).getSigner());
+    toast("撤单中，请在钱包确认…");
+    const tx = await market.cancel(oid, { from: walletAddr, gasLimit: 2000000 });
+    await tx.wait();
+    toast("已撤单", "ok");
+    renderMarket($("projTabBody"));
+  } catch(e) { toast("撤单失败：" + (e.message || ""), "err"); }
+}
+function renderSellPanel(){
+  $("marketBody").innerHTML = `
+    <div class="card">
+      <h2>挂单出售</h2>
+      <div class="field"><label>类型</label>
+        <select id="sellKind" onchange="renderSellPanel()"><option value="pc">PC 整机</option><option value="part">部件</option></select>
+      </div>
+      <div id="sellPartPanel" class="hide">
+        <div class="field"><label>部件类型</label>
+          <select id="sellPartType">${PARTS_NAMES.map((n, i) => `<option value="${i+1}">${n}</option>`).join("")}</select>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>数量</label><input id="sellQty" type="number" value="1" min="1"></div>
+          <div class="field"><label>单价（项目代币）</label><input id="sellPrice" type="number" value="1" step="0.01" min="0"></div>
+        </div>
+      </div>
+      <div id="sellPcPanel">
+        <div class="field"><label>选择 PC（我的待机整机）</label><select id="sellPcSel">读取中…</select></div>
+        <div class="field"><label>单价（项目代币）</label><input id="sellPrice2" type="number" value="1" step="0.01" min="0"></div>
+      </div>
+      <button class="btn" id="btnSell">挂单</button>
+    </div>`;
+  if ($("sellKind").value === "part") {
+    $("sellPartPanel").classList.remove("hide");
+    $("sellPcPanel").classList.add("hide");
+  } else {
+    $("sellPartPanel").classList.add("hide");
+    $("sellPcPanel").classList.remove("hide");
+    (async () => {
+      try {
+        const prov = await getProvider();
+        const circ = new ethers.Contract(projectMeta.circuit, ABI.XPowerCircuit, prov);
+        const ids = await circ.pcsOfOwner(walletAddr);
+        const opts = [];
+        for (const id of ids) { const s = await circ.pcs(id); if (!s.staked) opts.push(`<option value="${id}">PC #${id} · T${Number(s.tier)} · ${fmt(Number(s.hashRate), 0)} H</option>`); }
+        $("sellPcSel").innerHTML = opts.length ? opts.join("") : `<option value="">暂无待机 PC</option>`;
+      } catch(e) { $("sellPcSel").innerHTML = `<option value="">读取失败</option>`; }
+    })();
+  }
+  $("btnSell").onclick = doSell;
+}
+async function doSell(){
+  if (!walletAddr) { toast("请先连接钱包", "err"); return; }
+  const kind = $("sellKind").value;
+  try {
+    const prov = await getProvider();
+    const signer = await (window.ethereum ? pickProvider() : prov).getSigner();
+    const market = new ethers.Contract(projectMeta.market, ABI.XPowerMarket, signer);
+    if (kind === "pc") {
+      const id = Number($("sellPcSel").value);
+      if (!id) { toast("请选择要出售的 PC", "err"); return; }
+      const price = toWei(Number($("sellPrice2").value), projectMeta.dec);
+      if (price <= 0n) { toast("单价需大于 0", "err"); return; }
+      toast("挂单中，请在钱包确认…");
+      const tx = await market.sellPC(id, price, { from: walletAddr, gasLimit: 2000000 });
+      await tx.wait();
+    } else {
+      const ptype = Number($("sellPartType").value);
+      const qty = Number($("sellQty").value) || 1;
+      const price = toWei(Number($("sellPrice").value), projectMeta.dec);
+      if (price <= 0n) { toast("单价需大于 0", "err"); return; }
+      toast("挂单中，请在钱包确认…");
+      const tx = await market.sellPart(ptype, qty, price, { from: walletAddr, gasLimit: 2000000 });
+      await tx.wait();
+    }
+    toast("挂单成功", "ok");
+    renderMarket($("projTabBody"));
+  } catch(e) { toast("挂单失败：" + (e.message || ""), "err"); }
+}
+
+/* ============================================================
+   我的资产
+============================================================ */
+const A_TABS = [
+  { k: "parts", n: "我的部件" },
+  { k: "pcs", n: "我的 PC" },
+  { k: "staking", n: "质押中" },
+  { k: "orders", n: "我的挂单" },
+  { k: "mine", n: "我创建的项目" }
+];
+async function loadAssets(){
+  const tabs = $("assetsTabs");
+  tabs.innerHTML = A_TABS.map(t => `<button class="tab" data-at="${t.k}" onclick="assetsTab('${t.k}', this)">${t.n}</button>`).join("");
+  assetsTab("parts", tabs.firstChild);
+}
+async function assetsTab(k, btn){
+  document.querySelectorAll("#assetsTabs .tab").forEach(x => x.classList.remove("on"));
+  if (btn) btn.classList.add("on");
+  const body = $("assetsBody");
+  if (!walletAddr) { body.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M3 7h18a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M3 7V5a2 2 0 0 1 2-2h10v4M16 13h2"/></svg></div>连接钱包查看资产</div>`; return; }
+  body.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M7 2h10M7 22h10M9 2v4l4 6-4 6v4M15 2v4l-2 3"/></svg></div>读取中…</div>`;
+  try {
+    const prov = await getProvider();
+    const parts = new ethers.Contract(userProjects.length ? userProjects[0].parts : ethers.ZeroAddress, ABI.XPowerParts, prov);
+    if (k === "parts") {
+      // 汇总所有项目的部件
+      let total = 0n; const byType = new Array(8).fill(0n);
+      for (const p of userProjects) {
+        const pc = new ethers.Contract(p.parts, ABI.XPowerParts, prov);
+        for (let t = 0; t < 8; t++) { const c = await pc.bal(t + 1, walletAddr); byType[t] += c; total += c; }
+      }
+      body.innerHTML = `<div class="card">
+        <h2>全部部件</h2>
+        <div class="parts-grid">${byType.map((c, i) => `
+          <div class="part-item"><span class="ptype pt${i}">${PARTS_ICONS[i]}</span><span class="nm">${PARTS_NAMES[i]}</span><span class="qty">×${Number(c)}</span></div>`).join("")}</div>
+        <div class="sub" style="margin-top:10px">合计：<b style="color:var(--gold)">${Number(total)}</b> 件</div>
+      </div>`;
+    } else if (k === "pcs") {
+      let rows = [];
+      for (const p of userProjects) {
+        const circ = new ethers.Contract(p.circuit, ABI.XPowerCircuit, prov);
+        let ids = [];
+        try { ids = await circ.pcsOfOwner(walletAddr); } catch(e){}
+        for (const id of ids.slice(0, 40)) {
+          const s = await circ.pcs(id);
+          rows.push({ box: p.box, id: Number(id), tier: Number(s.tier), hash: Number(s.hashRate), staked: s.staked, dec: p.dec || 18 });
+        }
+      }
+      body.innerHTML = rows.length ? `<div class="pc-grid">${rows.map(r => `
+        <div class="pc-item"><div class="pid">#${r.id} <span class="pill ${r.staked ? "g" : "c"}">${r.staked ? "质押中" : "待机"}</span></div>
+        <div class="line"><span>品质</span><b>T${r.tier}</b></div>
+        <div class="line"><span>算力</span><b>${fmt(r.hash, 0)} H</b></div>
+        <div class="line"><span>所属项目</span><b class="mono" style="font-size:10px">${shortAddr(r.box)}</b></div></div>`).join("")}</div>
+        ${rows.length >= 40 ? `<div class="sub" style="margin-top:8px">…仅显示前 40 台</div>` : ""}` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>还没有 PC</div>`;
+    } else if (k === "staking") {
+      let rows = [];
+      for (const p of userProjects) {
+        const circ = new ethers.Contract(p.circuit, ABI.XPowerCircuit, prov);
+        const mining = new ethers.Contract(p.mining, ABI.XPowerMining, prov);
+        let ids = [];
+        try { ids = await circ.pcsOfOwner(walletAddr); } catch(e){}
+        const staked = [];
+        for (const id of ids) { const s = await circ.pcs(id); if (s.staked) staked.push(id); }
+        for (const id of staked.slice(0, 40)) {
+          const s = await circ.pcs(id);
+          rows.push({ box: p.box, id: Number(id), tier: Number(s.tier), hash: Number(s.hashRate), dec: p.dec || 18 });
+        }
+      }
+      body.innerHTML = rows.length ? `<div class="pc-grid">${rows.map(r => `
+        <div class="pc-item"><div class="pid">#${r.id}</div>
+        <div class="line"><span>品质</span><b>T${r.tier}</b></div>
+        <div class="line"><span>算力</span><b>${fmt(r.hash, 0)} H</b></div></div>`).join("")}</div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M14 6l4-4 4 4-4 4M14 6l-3 3"/><path d="M11 9L2 18l4 4 9-9"/></svg></div>没有质押中的 PC</div>`;
+    } else if (k === "orders") {
+      let rows = [];
+      for (const p of userProjects) {
+        try {
+          const market = new ethers.Contract(p.market, ABI.XPowerMarket, prov);
+          const oc = Number(await market.orderCount());
+          for (let i = 1; i <= oc; i++) {
+            const o = await market.orders(i);
+            if (o.active && o.seller.toLowerCase() === walletAddr.toLowerCase()) rows.push({ p, oid: i, kind: Number(o.kind), sub: Number(o.sub), qty: Number(o.qty), price: o.price, dec: p.dec || 18 });
+            if (rows.length >= 50) break;
+          }
+        } catch(e){}
+        if (rows.length >= 50) break;
+      }
+      body.innerHTML = rows.length ? `<div class="orders">${rows.map(r => `
+        <div class="order" style="cursor:pointer" onclick="go('p/${r.p.box}')">
+          <div class="ob">${r.kind === 2 ? "PC #" + r.sub : "部件 ×" + r.qty} <span class="mono" style="font-size:10px">${shortAddr(r.p.box)}</span></div>
+          <div class="ob"><span class="price">${fmt(fromWei(r.price, r.dec), 4)}</span></div>
+        </div>`).join("")}</div><div class="sub" style="margin-top:8px">点击跳转到对应项目页管理挂单</div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div>暂无挂单<br><br><button class="btn" onclick="go('boxes')">去项目市场挂单</button></div>`;
+    } else if (k === "mine") {
+      const mine = userProjects.filter(p => (p.creator || "").toLowerCase() === walletAddr.toLowerCase());
+      body.innerHTML = mine.length ? `<div class="plist">${mine.map(p => `
+        <div class="pcard" onclick="go('p/${p.box}')">
+          <div class="pname">${esc(p.name)}</div>
+          <div class="pmeta">盲盒 ${p.total} · 单价 ${p.price}</div>
+          <div class="paddr">${esc(p.box)}</div>
+        </div>`).join("")}</div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M12 2c4 0 7 3 7 7-1 5-4 8-7 11-3-3-6-6-7-11 0-4 3-7 7-7z"/><path d="M12 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5 21l3-3M19 21l-3-3"/></svg></div>你还没有创建项目<br><br><button class="btn" onclick="go('create')">去发射台</button></div>`;
+    }
+  } catch(e) {
+    body.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>读取失败：${esc(e.message)}</div>`;
+  }
+}
+
+/* ---------- 初始化 ---------- */
+window.addEventListener("load", () => {
+  // 动态加载 ethers
+  if (typeof ethers === "undefined") {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js";
+    s.onload = () => { window._boot(); };
+    document.head.appendChild(s);
+  } else window._boot();
+});
+window._boot = function(){
+  provider = pickProvider();
+  if (window.ethereum) connectWallet();
+  route();
+};
+
+</script>
+</body>
+</html>
