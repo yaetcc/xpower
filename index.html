@@ -449,14 +449,17 @@ function fmtPrice(v){
 function priceNum(t){ return Number(t.virtualBase) / (Number(t.virtualToken) > 0 ? Number(t.virtualToken) : 1); }
 // 与合约一致的本地曲线计算（即时反馈，不依赖 RPC）
 function calcBuy(amt, t){
-  const net = amt - amt * 100 / 10000;
-  const vt = Number(t.virtualToken), vb = Number(t.virtualBase);
-  return net * vt / (vb + net);
+  // BigInt 全程计算，与合约 uint256 公式一致（避免浮点精度吞掉小量）
+  const net = toWei(amt) - toWei(amt) * 100n / 10000n;
+  const vt = BigInt(t.virtualToken), vb = BigInt(t.virtualBase);
+  const out = net * vt / (vb + net);
+  return Number(out) / 1e18;
 }
 function calcSell(tok, t){
-  const vt = Number(t.virtualToken), vb = Number(t.virtualBase);
-  const gross = tok * vb / (vt + tok);
-  return gross - gross * 100 / 10000;
+  const vt = BigInt(t.virtualToken), vb = BigInt(t.virtualBase);
+  const gross = toWei(tok) * vb / (vt + toWei(tok));
+  const out = gross - gross * 100n / 10000n;
+  return Number(out) / 1e18;
 }
 function copyAddr(addr){
   if (navigator.clipboard) navigator.clipboard.writeText(addr).then(() => toast("已复制合约地址", "ok")).catch(() => toast("复制失败", "err"));
