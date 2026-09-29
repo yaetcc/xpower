@@ -174,7 +174,8 @@ h2{font-size:16px;font-weight:700;margin-bottom:10px}
 .copyable{cursor:pointer;border-bottom:1px dashed var(--line)}
 .copyable:hover{color:var(--acc)}
 /* 权重 */
-.wrow{display:grid;grid-template-columns:24px 1fr 80px;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
+.wrow{display:grid;grid-template-columns:24px 1fr 80px 52px;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
+.wrow .wshare{text-align:right;font-size:11px;color:var(--acc);font-style:normal}
 .wrow input{text-align:right}
 .wsum{font-size:12px;color:var(--dim);margin-top:6px}
 /* 空态 */
@@ -759,7 +760,7 @@ async function createToken(){
         await loadLaunch();
         if (curCoin) renderTrade();
       }
-      return coinAddr ? "发币成功 " + shortAddr(coinAddr) : "已发币（事件解析失败）";
+      return coinAddr ? "发币成功 " + shortAddr(coinAddr) + "，已填入发射台代币地址，可继续创建项目" : "已发币（事件解析失败）";
     });
     qRun();
   } catch(e){ toast("发币失败：" + (e.message || e), "err"); console.error(e); }
@@ -900,6 +901,8 @@ async function deployProject(){
   try { cfg = await validateForm(); } catch(e) { toast(e.message, "err"); return; }
   const btn = $("btnDeploy");
   btn.disabled = true; btn.textContent = "部署中…";
+  const dinfo = $("deployInfo");
+  if (dinfo) dinfo.innerHTML = `<div class="hint">部署参数：盲盒 ${cfg.total} 盒 · 单价 ${cfg.price} ${shortAddr(cfg.token)} · 开盒上限 ${cfg.openMax} · 权重 ${cfg.ws.join("/")}</div>`;
 
   provider = pickProvider();
   qstate.steps = [];
@@ -977,28 +980,36 @@ async function loadProjects(){
   const el = $("boxList");
   el.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>加载项目中…</div>`;
   try {
-    const projs = [...userProjects].reverse();
-    const rows = [];
-    for (const p of projs) {
-      let info = "本地记录", sold = 0, total = 0;
+    const prov = await getProvider();
+    const reads = await Promise.allSettled(projs.map(async (p) => {
       try {
-        const box = new ethers.Contract(p.box, ABI.XPowerBox, await getProvider());
+        const box = new ethers.Contract(p.box, ABI.XPowerBox, prov);
         const b1 = await readBox(box, 1);
-        sold = Number(b1.sold); total = Number(b1.total);
-        info = `${fmt(fromWei(b1.price, p.dec||18), 6)} /盒 · 已开 ${sold}/${total}`;
-      } catch(e) { info = "读取失败"; }
+        return { p, sold: Number(b1.sold), total: Number(b1.total), price: b1.price, err: false };
+      } catch(e) { return { p, sold: 0, total: 0, price: null, err: true }; }
+    }));
+    const okRows = reads.filter(r => r.status === "fulfilled");
+    const totalBoxes = okRows.reduce((a, r) => a + (!r.value.err ? r.value.total : 0), 0);
+    const soldBoxes = okRows.reduce((a, r) => a + (!r.value.err ? r.value.sold : 0), 0);
+    const rows = okRows.map(r => {
+      const { p, sold, total, price, err } = r.value;
+      const info = err ? "读取失败" : `${fmt(fromWei(price, p.dec||18), 6)} /盒 · 已开 ${sold}/${total}`;
       const pct = total ? Math.min(100, sold * 100 / total) : 0;
-      rows.push(`
+      return `
         <div class="pcard" onclick="go('p/${p.box}')">
           <div class="pname"><span class="ptype pt${(p.token||"").length%8}">${PARTS_ICONS[(p.token||"").length%8]}</span>${esc(p.name)}</div>
           <div class="pmeta">${info}</div>
           <div style="height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:8px 0"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:99px"></div></div>
           <div class="pmeta">创建者：<span class="mono">${shortAddr(p.creator || walletAddr)}</span></div>
           <div class="paddr">${esc(p.box)}</div>
-          <div class="pstat"><span class="pill c">已上线</span></div>
-        </div>`);
-    }
-    el.innerHTML = rows.length ? rows.join("") : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>还没有项目<br><br><button class="btn" onclick="go('create')">去发射台创建</button></div>`;
+          <div class="pstat"><span class="pill c">已上线</span> <span class="lbtn" style="color:var(--acc)">进入项目 →</span></div>
+        </div>`;
+    });
+    el.innerHTML = (rows.length ? `<div class="statbar" style="margin-bottom:12px">
+      <div class="stat"><div class="k">项目</div><div class="v c">${okRows.length}</div></div>
+      <div class="stat"><div class="k">盲盒总量</div><div class="v">${fmt(totalBoxes, 0)}</div></div>
+      <div class="stat"><div class="k">已开盒</div><div class="v g">${fmt(soldBoxes, 0)}${totalBoxes ? "（" + fmt(soldBoxes * 100 / totalBoxes, 1) + "%）" : ""}</div></div>
+    </div>` : "") + (rows.length ? rows.join("") : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>还没有项目<br><br><button class="btn" onclick="go('create')">去发射台创建</button></div>`);
   } catch(e) {
     el.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>加载失败：${esc(e.message)}</div>`;
   }
@@ -1684,11 +1695,14 @@ async function assetsTab(k, btn){
         const pc = new ethers.Contract(p.parts, ABI.XPowerParts, prov);
         for (let t = 0; t < 8; t++) { const c = await pc.bal(t + 1, walletAddr); byType[t] += c; total += c; }
       }
-      body.innerHTML = `<div class="card">
-        <h2>全部部件</h2>
+      const stakedN2 = 0;
+      body.innerHTML = `<div class="statbar" style="margin-bottom:12px">
+        <div class="stat"><div class="k">部件合计</div><div class="v c">${Number(total)}</div></div>
+        <div class="stat"><div class="k">可组装整机</div><div class="v g">${Number(byType.reduce((a, b) => a < b ? a : b))}</div></div>
+      </div><div class="card">
+        <h2>全部部件 · ${Number(total)} 件</h2>
         <div class="parts-grid">${byType.map((c, i) => `
           <div class="part-item"><span class="ptype pt${i}">${PARTS_ICONS[i]}</span><span class="nm">${PARTS_NAMES[i]}</span><span class="qty">×${Number(c)}</span></div>`).join("")}</div>
-        <div class="sub" style="margin-top:10px">合计：<b style="color:var(--gold)">${Number(total)}</b> 件</div>
       </div>`;
     } else if (k === "pcs") {
       let rows = [];
@@ -1696,17 +1710,21 @@ async function assetsTab(k, btn){
         const circ = new ethers.Contract(p.circuit, ABI.XPowerCircuit, prov);
         let ids = [];
         try { ids = await circ.pcsOfOwner(walletAddr); } catch(e){}
-        for (const id of ids.slice(0, 40)) {
+        for (const id of ids) {
           const s = await circ.pcs(id);
           rows.push({ box: p.box, id: Number(id), tier: Number(s.tier), hash: Number(s.hashRate), staked: s.staked, dec: p.dec || 18 });
         }
       }
-      body.innerHTML = rows.length ? `<div class="pc-grid">${rows.map(r => `
+      const stakedN = rows.filter(r => r.staked).length;
+      body.innerHTML = rows.length ? `<div class="statbar" style="margin-bottom:12px">
+        <div class="stat"><div class="k">PC 总数</div><div class="v c">${rows.length}</div></div>
+        <div class="stat"><div class="k">待机</div><div class="v">${rows.length - stakedN}</div></div>
+        <div class="stat"><div class="k">质押中</div><div class="v g">${stakedN}</div></div>
+      </div><div class="pc-scroll"><div class="pc-grid">${rows.map(r => `
         <div class="pc-item"><div class="pid">#${r.id} <span class="pill ${r.staked ? "g" : "c"}">${r.staked ? "质押中" : "待机"}</span></div>
         <div class="line"><span>品质</span><b>T${r.tier}</b></div>
         <div class="line"><span>算力</span><b>${fmt(r.hash, 0)} H</b></div>
-        <div class="line"><span>所属项目</span><b class="mono" style="font-size:10px">${shortAddr(r.box)}</b></div></div>`).join("")}</div>
-        ${rows.length >= 40 ? `<div class="sub" style="margin-top:8px">…仅显示前 40 台</div>` : ""}` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>还没有 PC</div>`;
+        <div class="line"><span>所属项目</span><b class="mono" style="font-size:10px">${shortAddr(r.box)}</b></div></div>`).join("")}</div></div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>还没有 PC<br><br><button class="btn" onclick="go('boxes')">去项目抽盲盒</button></div>`;
     } else if (k === "staking") {
       let rows = [];
       for (const p of userProjects) {
@@ -1716,15 +1734,16 @@ async function assetsTab(k, btn){
         try { ids = await circ.pcsOfOwner(walletAddr); } catch(e){}
         const staked = [];
         for (const id of ids) { const s = await circ.pcs(id); if (s.staked) staked.push(id); }
-        for (const id of staked.slice(0, 40)) {
+        for (const id of staked) {
           const s = await circ.pcs(id);
           rows.push({ box: p.box, id: Number(id), tier: Number(s.tier), hash: Number(s.hashRate), dec: p.dec || 18 });
         }
       }
-      body.innerHTML = rows.length ? `<div class="pc-grid">${rows.map(r => `
+      body.innerHTML = rows.length ? `<div class="statbar" style="margin-bottom:12px"><div class="stat"><div class="k">质押中</div><div class="v g">${rows.length} 台</div></div><div class="stat"><div class="k">总算力</div><div class="v c">${fmt(rows.reduce((a, r) => a + r.hash, 0), 0)} H</div></div></div><div class="pc-scroll"><div class="pc-grid">${rows.map(r => `
         <div class="pc-item"><div class="pid">#${r.id}</div>
         <div class="line"><span>品质</span><b>T${r.tier}</b></div>
-        <div class="line"><span>算力</span><b>${fmt(r.hash, 0)} H</b></div></div>`).join("")}</div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M14 6l4-4 4 4-4 4M14 6l-3 3"/><path d="M11 9L2 18l4 4 9-9"/></svg></div>没有质押中的 PC</div>`;
+        <div class="line"><span>算力</span><b>${fmt(r.hash, 0)} H</b></div>
+        <div class="line"><span>所属项目</span><b class="mono" style="font-size:10px">${shortAddr(r.box)}</b></div></div>`).join("")}</div></div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M14 6l4-4 4 4-4 4M14 6l-3 3"/><path d="M11 9L2 18l4 4 9-9"/></svg></div>没有质押中的 PC<br><br><button class="btn" onclick="go('boxes')">去项目页质押</button></div>`;
     } else if (k === "orders") {
       let rows = [];
       for (const p of userProjects) {
@@ -1742,8 +1761,9 @@ async function assetsTab(k, btn){
       body.innerHTML = rows.length ? `<div class="orders">${rows.map(r => `
         <div class="order" style="cursor:pointer" onclick="go('p/${r.p.box}')">
           <div class="ob">${r.kind === 2 ? "PC #" + r.sub : "部件 ×" + r.qty} <span class="mono" style="font-size:10px">${shortAddr(r.p.box)}</span></div>
-          <div class="ob"><span class="price">${fmt(fromWei(r.price, r.dec), 4)}</span></div>
-        </div>`).join("")}</div><div class="sub" style="margin-top:8px">点击跳转到对应项目页管理挂单</div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div>暂无挂单<br><br><button class="btn" onclick="go('boxes')">去项目市场挂单</button></div>`;
+          <div class="ob"><span class="price">${fmt(fromWei(r.price, r.dec), 4)}</span>${r.kind === 1 ? " /件 · 共 " + fmt(fromWei(r.price * BigInt(r.qty), r.dec), 4) : ""}</div>
+          <div class="ob"><span class="lbtn" style="color:var(--acc)">去管理 →</span></div>
+        </div>`).join("")}</div><div class="sub" style="margin-top:8px">点击进入对应项目页管理挂单</div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div>暂无挂单<br><br><button class="btn" onclick="go('boxes')">去项目市场挂单</button></div>`;
     } else if (k === "mine") {
       const mine = userProjects.filter(p => (p.creator || "").toLowerCase() === walletAddr.toLowerCase());
       body.innerHTML = mine.length ? `<div class="plist">${mine.map(p => `
