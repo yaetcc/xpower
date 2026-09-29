@@ -151,6 +151,16 @@ h2{font-size:16px;font-weight:700;margin-bottom:10px}
 .kv{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px dashed rgba(30,42,58,.5)}
 .kv .k{color:var(--dim)} .kv .v{font-weight:600;color:var(--gold)}
 footer{max-width:1000px;margin:0 auto;padding:18px 14px;color:var(--faint);font-size:11px;text-align:center}
+
+.lplogo{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:linear-gradient(135deg,#1e293b,#334155);border:1px solid var(--line);color:var(--gold);flex:none}
+.lbar{height:6px;border-radius:99px;background:var(--bg2);overflow:hidden;margin:8px 0}
+.lbar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#22d3ee,#fbbf24)}
+.lrow{display:flex;align-items:center;gap:10px}
+.lrow2{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--dim)}
+.lrow2 b{color:var(--fg)}
+.lbtn{font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--line);background:var(--bg2);color:var(--dim);cursor:pointer;transition:border-color .15s,color .15s}
+.lbtn:hover{color:var(--gold);border-color:var(--gold)}
+
 </style>
 </head>
 <body>
@@ -171,24 +181,25 @@ footer{max-width:1000px;margin:0 auto;padding:18px 14px;color:var(--faint);font-
   <!-- ===== 视图：发币台（自研发射台） ===== -->
   <section class="view" id="view-launch">
     <h1>发币台 · 自研代币发射</h1>
-    <p class="sub" style="margin-bottom:16px">免费发币 + 内置交易曲线（pump 式）· 买币进池、卖币回购 · 交易费 1% 实时进平台地址</p>
+    <p class="sub" style="margin-bottom:12px">免费发币 + 内置交易曲线（pump 式）· 买币进池、卖币回购 · 交易费 1% 实时进平台地址</p>
+    <div class="statbar" id="launchStats" style="margin-bottom:14px"></div>
     <div class="grid2" style="align-items:start;margin-bottom:14px">
       <div class="card">
         <h2>① 发币（免费 · 仅付 Gas）</h2>
         <div class="field"><label>代币名称</label><input id="lName" placeholder="如 MyCoin" style="width:100%"></div>
         <div class="field"><label>代币符号</label><input id="lSymbol" placeholder="如 MYC" style="width:100%"></div>
         <div class="field"><label>总量（≥ 1，建议 1 亿起）</label><input id="lSupply" type="number" value="100000000" min="1" style="width:100%"></div>
-        <div class="field"><label>创建者份额（0–30%，默认 20%）</label><input id="lShare" type="number" value="20" min="0" max="30" style="width:100%"><div class="hint">剩余进交易曲线池 · 代币完全可控可转账</div></div>
+        <div class="field"><label>创建者份额（0–30%，默认 20%）</label><input id="lShare" type="number" value="20" min="0" max="30" style="width:100%"><div class="hint">剩余进交易曲线池 · 代币完全可控可转账 · 发币即上内置市场</div></div>
         <button class="btn" id="btnCreateToken" style="width:100%">免费发币</button>
         <div id="createTokenInfo" style="margin-top:8px"></div>
       </div>
       <div class="card">
         <h2>② 交易面板</h2>
-        <div id="tradeSel"><div class="empty" style="padding:20px 10px">← 从右侧代币列表选择开始交易</div></div>
+        <div id="tradeSel"><div class="empty" style="padding:20px 10px">← 从下方代币列表选择开始交易</div></div>
       </div>
     </div>
     <div class="card">
-      <h2>已发射代币</h2>
+      <h2>已发射代币 <span id="launchCount" style="color:var(--faint);font-weight:400;font-size:13px"></span></h2>
       <div id="coinList"></div>
     </div>
   </section>
@@ -429,7 +440,28 @@ let curCoin = null, coinCache = [], tradeMode = "buy", lpContract = null;
 
 async function lpRead(){ const p = await getProvider(); return new ethers.Contract(LAUNCHPAD, LP.XPowerLaunchpad, p); }
 async function coinRead(addr){ const p = await getProvider(); return new ethers.Contract(addr, LP.XPCoin, p); }
-function fmtPrice(v){ if (v >= 0.001) return v.toFixed(4); if (v >= 1e-6) return v.toFixed(8); if (v > 0) return v.toExponential(4); return "0"; }
+function fmtPrice(v){
+  if (v >= 0.001) return v.toFixed(4);
+  if (v >= 1e-6) return v.toFixed(8);
+  if (v > 0) return v.toFixed(10).replace(/\.?0+$/, "");
+  return "0";
+}
+function priceNum(t){ return Number(t.virtualBase) / (Number(t.virtualToken) > 0 ? Number(t.virtualToken) : 1); }
+// 与合约一致的本地曲线计算（即时反馈，不依赖 RPC）
+function calcBuy(amt, t){
+  const net = amt - amt * 100 / 10000;
+  const vt = Number(t.virtualToken), vb = Number(t.virtualBase);
+  return net * vt / (vb + net);
+}
+function calcSell(tok, t){
+  const vt = Number(t.virtualToken), vb = Number(t.virtualBase);
+  const gross = tok * vb / (vt + tok);
+  return gross - gross * 100 / 10000;
+}
+function copyAddr(addr){
+  if (navigator.clipboard) navigator.clipboard.writeText(addr).then(() => toast("已复制合约地址", "ok")).catch(() => toast("复制失败", "err"));
+  else toast("浏览器不支持复制", "err");
+}
 
 async function loadLaunch(){
   if (LAUNCHPAD.indexOf("0000000000000000000000000000000000000000") === 2) {
@@ -449,38 +481,69 @@ async function loadLaunch(){
       rows.push({ addr, t, price, bal });
     }
     coinCache = rows;
+    renderStats();
     renderCoinList();
     if (curCoin && !coinCache.some(c => c.addr === curCoin)) curCoin = null;
     if (curCoin) renderTrade();
   } catch(e) { $("coinList").innerHTML = '<div class="empty">读取失败：' + esc(e.message) + '</div>'; }
 }
+function renderStats(){
+  const el = $("launchStats"); if (!el) return;
+  const n = coinCache.length;
+  const pool = coinCache.reduce((s,c) => s + Number(c.t.virtualBase)/1e18, 0);
+  const mcap = coinCache.reduce((s,c) => s + (Number(c.t.sold)/1e18) * (Number(c.price)/1e18), 0);
+  el.innerHTML =
+    '<div class="stat"><b style="color:var(--gold);font-size:18px">' + n + '</b><span style="color:var(--faint);font-size:11px">已发射代币</span></div>' +
+    '<div class="stat"><b style="font-size:15px">' + fmt(pool,2) + ' OKB</b><span style="color:var(--faint);font-size:11px">池中储备</span></div>' +
+    '<div class="stat"><b style="font-size:15px">' + fmt(mcap,2) + ' OKB</b><span style="color:var(--faint);font-size:11px">流通市值</span></div>';
+}
 function renderCoinList(){
   const el = $("coinList");
+  const cnt = $("launchCount"); if (cnt) cnt.textContent = "· " + coinCache.length + " 个";
   if (!coinCache.length) { el.innerHTML = '<div class="empty">还没有代币 · 左侧免费发币，发完即带交易市场</div>'; return; }
   el.innerHTML = coinCache.map(c => {
     const p = Number(c.price) / 1e18;
     const pct = Number(c.t.totalSupply) > 0 ? (Number(c.t.sold) / Number(c.t.totalSupply) * 100) : 0;
+    const mine = walletAddr && String(c.t.creator).toLowerCase() === walletAddr.toLowerCase();
+    const hold = walletAddr ? Number(c.bal)/1e18 : 0;
+    const mcap = (Number(c.t.sold)/1e18) * p;
     return '<div class="pcard" onclick="openTrade(\'' + c.addr + '\')" style="margin-bottom:8px">' +
+      '<div class="lrow">' +
+      '<div class="lplogo">' + esc(c.t.symbol.slice(0,1).toUpperCase()) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
       '<div class="pname">' + esc(c.t.symbol) + ' <span style="color:var(--faint);font-weight:400;font-size:12px">' + esc(c.t.name) + '</span>' +
-      (walletAddr && String(c.t.creator).toLowerCase() === walletAddr.toLowerCase() ? ' <span class="pill g">我创建</span>' : '') + '</div>' +
-      '<div class="pmeta">价格 <b style="color:var(--gold)">' + fmtPrice(p) + ' OKB</b> · 已售 ' + fmt(pct,2) + '%</div>' +
-      '<div class="paddr">' + shortAddr(c.addr) + '</div>' +
+      (mine ? ' <span class="pill g">我创建</span>' : '') + '</div>' +
+      '<div class="paddr">' + shortAddr(c.addr) + ' <button class="lbtn" onclick="event.stopPropagation();copyAddr(\'' + c.addr + '\')">复制</button></div>' +
+      '</div>' +
+      (hold > 0 ? '<span class="pill">持有 ' + fmt(hold) + '</span>' : '') +
+      '</div>' +
+      '<div class="lrow2">' +
+      '<span>价格 <b>' + fmtPrice(p) + ' OKB</b></span>' +
+      '<span>市值 <b>' + fmt(mcap,2) + ' OKB</b></span>' +
+      '<span>已售 <b>' + fmt(pct,2) + '%</b></span>' +
+      '</div>' +
+      '<div class="lbar"><i style="width:' + Math.min(100, pct) + '%"></i></div>' +
+      '<div style="display:flex;gap:8px;margin-top:8px"><button class="lbtn" style="flex:1" onclick="event.stopPropagation();openTrade(\'' + c.addr + '\')">交易</button>' +
+      '<button class="lbtn" style="flex:1" onclick="event.stopPropagation();useForProjectAddr(\'' + c.addr + '\')">用此币创建项目</button></div>' +
       '</div>';
   }).join("");
+}
+function useForProjectAddr(addr){
+  curCoin = addr;
+  useForProject();
 }
 async function openTrade(addr){
   curCoin = addr;
   if (!coinCache.some(c => c.addr === addr)) await loadLaunch();
   renderTrade();
 }
-function priceNum(t){ return Number(t.virtualBase) / (Number(t.virtualToken) > 0 ? Number(t.virtualToken) : 1); }
 function curveSVG(t){
   const W = 300, H = 110, W2 = W - 60, H2 = H - 40;
   const vb = Number(t.virtualBase), vt = Number(t.virtualToken);
-  const p0 = vb / vt;                                   // 初始价
+  const p0 = vb / vt;
   const soldPct = Number(t.sold) / Number(t.totalSupply);
   const xMax = Math.min(0.95, Math.max(0.08, soldPct + 0.03));
-  const pAt = (x) => vb / (vt * (1 - x));               // 理论价格随已售比例
+  const pAt = (x) => vb / (vt * (1 - x));
   const pMax = pAt(xMax);
   const pts = [];
   for (let i = 0; i <= 60; i++) {
@@ -498,25 +561,40 @@ function curveSVG(t){
     '<text x="' + (W-60).toFixed(0) + '" y="' + (H-4).toFixed(0) + '" fill="#5c7190" font-size="9">已售比例 →</text>' +
     '</svg>';
 }
-function renderTrade(){
+async function renderTrade(){
   const c = coinCache.find(x => x.addr === curCoin);
   if (!c) { $("tradeSel").innerHTML = '<div class="empty">代币数据读取失败</div>'; return; }
   const t = c.t;
   const p = Number(c.price) / 1e18;
   const myBal = walletAddr ? Number(c.bal) / 1e18 : 0;
+  const pct = Number(t.totalSupply) > 0 ? (Number(t.sold) / Number(t.totalSupply) * 100) : 0;
+  const mcap = (Number(t.sold)/1e18) * p;
+  let okbBal = 0;
+  if (walletAddr) { try { okbBal = Number(await (await getProvider()).getBalance(walletAddr)) / 1e18; } catch(e){} }
   $("tradeSel").innerHTML =
-    '<div class="row" style="margin-bottom:8px"><span style="font-weight:700;font-size:16px">' + esc(t.symbol) + '</span>' +
-    '<span class="pill c">价格 ' + fmtPrice(p) + ' OKB</span>' +
-    (walletAddr ? '<span class="pill">持有 ' + fmt(myBal) + '</span>' : '') + '</div>' +
+    '<div class="lrow" style="margin-bottom:8px">' +
+    '<div class="lplogo">' + esc(t.symbol.slice(0,1).toUpperCase()) + '</div>' +
+    '<div style="flex:1;min-width:0">' +
+    '<div style="font-weight:700;font-size:16px">' + esc(t.symbol) + ' <span style="color:var(--faint);font-weight:400;font-size:12px">' + esc(t.name) + '</span></div>' +
+    '<div class="paddr">' + shortAddr(curCoin) + ' <button class="lbtn" onclick="copyAddr(\'' + curCoin + '\')">复制地址</button></div>' +
+    '</div>' +
+    '<span class="pill c">' + fmtPrice(p) + ' OKB</span>' +
+    '</div>' +
     curveSVG(t) +
-    '<div class="kv"><span class="k">总量</span><span class="v">' + fmt(Number(t.totalSupply)/1e18) + '</span></div>' +
-    '<div class="kv"><span class="k">已售</span><span class="v">' + fmt(Number(t.sold)/1e18) + '</span></div>' +
-    '<div class="kv"><span class="k">创建者份额</span><span class="v">' + fmt(Number(t.creatorShare)/1e18) + '</span></div>' +
-    '<div class="kv"><span class="k">池中 OKB</span><span class="v">' + fmt(Number(t.virtualBase)/1e18) + '</span></div>' +
-    '<div class="tabs" style="margin-top:10px"><button class="tab on" id="tBuy" onclick="setTradeMode(\'buy\')">买入</button>' +
-    '<button class="tab" id="tSell" onclick="setTradeMode(\'sell\')">卖出</button></div>' +
+    '<div class="lbar"><i style="width:' + Math.min(100, pct) + '%"></i></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin:8px 0;font-size:12px;color:var(--dim)">' +
+    '<span>总量 <b style="color:var(--fg)">' + fmt(Number(t.totalSupply)/1e18) + '</b></span>' +
+    '<span>已售 <b style="color:var(--fg)">' + fmt(Number(t.sold)/1e18,2) + ' (' + fmt(pct,1) + '%)</b></span>' +
+    '<span>池中 OKB <b style="color:var(--fg)">' + fmt(Number(t.virtualBase)/1e18,2) + '</b></span>' +
+    '<span>市值 <b style="color:var(--fg)">' + fmt(mcap,2) + ' OKB</b></span>' +
+    '<span>创建者份额 <b style="color:var(--fg)">' + fmt(Number(t.creatorShare)/1e18) + '</b></span>' +
+    '<span>我的持仓 <b style="color:var(--fg)">' + fmt(myBal) + '</b></span>' +
+    '</div>' +
+    (walletAddr ? '<div style="font-size:11px;color:var(--faint);margin-bottom:6px">OKB 余额 ' + fmt(okbBal,4) + ' · 代币余额 ' + fmt(myBal,4) + '</div>' : '') +
+    '<div class="tabs"><button class="tab on" id="tBuy" onclick="setTradeMode(\'buy\')">买入 OKB</button>' +
+    '<button class="tab" id="tSell" onclick="setTradeMode(\'sell\')">卖出代币</button></div>' +
     '<div class="row" style="margin:8px 0"><input id="tradeAmt" type="number" placeholder="数量" style="flex:1;min-width:0" oninput="tradeCalc()">' +
-    '<button class="btn" id="btnTrade" onclick="doTrade()">买入</button></div>' +
+    '<button class="btn" id="btnTrade" onclick="doTrade()">买入 OKB</button></div>' +
     '<div id="tradeCalc" class="sub" style="min-height:18px"></div>' +
     '<div class="row" style="margin-top:8px"><button class="btn ghost sm" onclick="useForProject()">用此币创建盲盒项目</button></div>';
   tradeMode = "buy";
@@ -527,58 +605,70 @@ function setTradeMode(m){
   const b = $("tBuy"), sl = $("tSell");
   if (b) b.classList.toggle("on", m === "buy");
   if (sl) sl.classList.toggle("on", m === "sell");
-  const bt = $("btnTrade"); if (bt) bt.textContent = m === "buy" ? "买入" : "卖出";
+  const bt = $("btnTrade"); if (bt) bt.textContent = m === "buy" ? "买入 OKB" : "卖出代币";
   const inp = $("tradeAmt"); if (inp) { inp.value = ""; inp.placeholder = m === "buy" ? "输入 OKB 数量" : "输入代币数量"; }
   tradeCalc();
 }
-async function tradeCalc(){
+function tradeCalc(){
   const inp = $("tradeAmt"), out = $("tradeCalc");
-  if (!inp || !out || !curCoin || !Number(inp.value)) { if (out) out.textContent = ""; return; }
-  try {
-    const lp = await lpRead();
-    if (tradeMode === "buy") {
-      const got = await lp.getBuyAmount(curCoin, toWei(inp.value));
-      out.textContent = "≈ 获得 " + fmt(Number(got)/1e18, 6) + " 代币（含 1% 手续费）";
-    } else {
-      const got = await lp.getSellAmount(curCoin, toWei(inp.value));
-      out.textContent = "≈ 获得 " + fmt(Number(got)/1e18, 6) + " OKB（含 1% 手续费）";
-    }
-  } catch(e){ out.textContent = ""; }
+  if (!inp || !out || !curCoin || !Number(inp.value)) { if (out) out.innerHTML = ""; return; }
+  const c = coinCache.find(x => x.addr === curCoin); if (!c) return;
+  const amt = Number(inp.value);
+  if (tradeMode === "buy") {
+    const got = calcBuy(amt, c.t);
+    const unit = got > 0 ? amt / got : 0;
+    out.innerHTML = '≈ 获得 <b style="color:var(--gold)">' + fmt(got,6) + '</b> 代币（含 1% 手续费）' +
+      (unit ? '<span style="color:var(--faint)"> · 单价 ' + fmtPrice(unit) + ' OKB</span>' : '');
+  } else {
+    const got = calcSell(amt, c.t);
+    const unit = got > 0 ? got / amt : 0;
+    out.innerHTML = '≈ 获得 <b style="color:var(--gold)">' + fmt(got,6) + '</b> OKB（含 1% 手续费）' +
+      (unit ? '<span style="color:var(--faint)"> · 单价 ' + fmtPrice(unit) + ' OKB</span>' : '');
+  }
 }
 async function doTrade(){
   try {
     if (!walletAddr) { toast("请先连接钱包", "err"); return; }
     if (!chainIdOk) { toast("请先切换到 X Layer 网络", "err"); return; }
     const inp = $("tradeAmt");
-  if (!inp || !Number(inp.value)) { toast("请输入数量", "err"); return; }
-  if (!LAUNCHPAD || LAUNCHPAD.indexOf("0000000000000000000000000000000000000000") === 2) { toast("发射台未部署", "err"); return; }
+    if (!inp || !Number(inp.value)) { toast("请输入数量", "err"); return; }
+    const amt = Number(inp.value);
+    const c = coinCache.find(x => x.addr === curCoin);
+    if (!c) { toast("代币数据未加载，请稍后重试", "err"); return; }
+    if (tradeMode === "buy") {
+      const bal = Number(await (await getProvider()).getBalance(walletAddr)) / 1e18;
+      if (bal < amt) { toast("OKB 余额不足（持有 " + fmt(bal,4) + "）", "err"); return; }
+    } else {
+      const hold = Number(c.bal) / 1e18;
+      if (hold < amt) { toast("代币余额不足（持有 " + fmt(hold,4) + "）", "err"); return; }
+    }
     if (!lpContract) await initLaunchpad();
     if (!lpContract) { toast("发射台合约连接失败，请刷新重试", "err"); return; }
     const signer = await provider.getSigner();
     const lpS = lpContract.connect(signer);
     if (tradeMode === "buy") {
-    qAdd("买入 " + esc(curCoin.slice(0,6)) + "…", async () => {
-      const tx = await lpS.buy(curCoin, { from: walletAddr, value: toWei(inp.value) });
-      await tx.wait();
-      await loadLaunch(); if (curCoin) renderTrade();
-      return "bought";
-    });
-  } else {
-    const coinS = (await coinRead(curCoin)).connect(signer);
-    qAdd("授权卖出", async () => { await coinS.approve(LAUNCHPAD, toWei(inp.value), { from: walletAddr }); return "approved"; });
-    qAdd("卖出 " + esc(curCoin.slice(0,6)) + "…", async () => {
-      const tx = await lpS.sell(curCoin, toWei(inp.value), { from: walletAddr });
-      await tx.wait();
-      await loadLaunch(); if (curCoin) renderTrade();
-      return "sold";
-    });
+      qAdd("买入 " + esc(curCoin.slice(0,6)) + "…", async () => {
+        const tx = await lpS.buy(curCoin, { from: walletAddr, value: toWei(inp.value) });
+        await tx.wait();
+        await loadLaunch(); if (curCoin) renderTrade();
+        return "买入成功";
+      });
+    } else {
+      const coinS = (await coinRead(curCoin)).connect(signer);
+      qAdd("授权卖出", async () => { await coinS.approve(LAUNCHPAD, toWei(inp.value), { from: walletAddr }); return "已授权"; });
+      qAdd("卖出 " + esc(curCoin.slice(0,6)) + "…", async () => {
+        const tx = await lpS.sell(curCoin, toWei(inp.value), { from: walletAddr });
+        await tx.wait();
+        await loadLaunch(); if (curCoin) renderTrade();
+        return "卖出成功";
+      });
     }
     qRun();
   } catch(e){ toast("交易失败：" + (e.message || e), "err"); console.error(e); }
 }
 function useForProject(){
   const c = coinCache.find(x => x.addr === curCoin);
-  if (!c) return;
+  if (!c) { toast("请先选择一个代币", "err"); return; }
   const f = $("fToken"); if (f) f.value = curCoin;
   go("create");
   toast("已填入项目代币地址，继续配置盲盒", "ok");
@@ -589,31 +679,31 @@ async function createToken(){
     if (!walletAddr) { toast("请先连接钱包", "err"); return; }
     if (!chainIdOk) { toast("请先切换到 X Layer 网络", "err"); return; }
     const name = $("lName").value.trim(), symbol = $("lSymbol").value.trim();
-  const supply = Number($("lSupply").value), share = Number($("lShare").value);
-  if (!name || !symbol) { toast("请填写名称与符号", "err"); return; }
-  if (!(supply >= 1)) { toast("总量至少 1", "err"); return; }
-  if (!(share >= 0 && share <= 30)) { toast("创建者份额 0–30%", "err"); return; }
+    const supply = Number($("lSupply").value), share = Number($("lShare").value);
+    if (!name || !symbol) { toast("请填写名称与符号", "err"); return; }
+    if (!(supply >= 1)) { toast("总量至少 1", "err"); return; }
+    if (!(share >= 0 && share <= 30)) { toast("创建者份额 0–30%", "err"); return; }
     if (!lpContract) await initLaunchpad();
     if (!lpContract) { toast("发射台合约连接失败，请刷新重试", "err"); return; }
     const signer = await provider.getSigner();
     const lpS = lpContract.connect(signer);
     qAdd("免费发币 " + symbol, async () => {
-    const tx = await lpS.createToken(name, symbol, toWei(supply), share * 100, { from: walletAddr });
-    const rec = await tx.wait();
-    let coinAddr = null;
-    try {
-      const ev = rec.logs.map(l => { try { return lpContract.interface.parseLog(l); } catch(e){ return null; } }).find(x => x && x.name === "TokenCreated");
-      if (ev) coinAddr = ev.args.coin;
-    } catch(e){}
-    if (coinAddr) {
-      localStorage.setItem("xp4_lastCoin", coinAddr);
-      const f = $("fToken"); if (f) f.value = coinAddr;
-      curCoin = coinAddr;
-      await loadLaunch();
-      if (curCoin) renderTrade();
-    }
-    return coinAddr || "已发币（事件解析失败）";
-  });
+      const tx = await lpS.createToken(name, symbol, toWei(supply), share * 100, { from: walletAddr });
+      const rec = await tx.wait();
+      let coinAddr = null;
+      try {
+        const ev = rec.logs.map(l => { try { return lpContract.interface.parseLog(l); } catch(e){ return null; } }).find(x => x && x.name === "TokenCreated");
+        if (ev) coinAddr = ev.args.coin;
+      } catch(e){}
+      if (coinAddr) {
+        localStorage.setItem("xp4_lastCoin", coinAddr);
+        const f = $("fToken"); if (f) f.value = coinAddr;
+        curCoin = coinAddr;
+        await loadLaunch();
+        if (curCoin) renderTrade();
+      }
+      return coinAddr ? "发币成功 " + shortAddr(coinAddr) : "已发币（事件解析失败）";
+    });
     qRun();
   } catch(e){ toast("发币失败：" + (e.message || e), "err"); console.error(e); }
 }
@@ -623,9 +713,10 @@ async function initLaunchpad(){
   if (LAUNCHPAD.indexOf("0000000000000000000000000000000000000000") === 2) return;
   try { lpContract = await lpRead(); } catch(e){ console.warn("launchpad init:", e.message); }
   const last = localStorage.getItem("xp4_lastCoin");
-  if (last && coinCache.some(c => c.addr === last)) { curCoin = last; }
+  if (last && coinCache.some(c => c.addr === last)) { curCoin = last; renderTrade(); }
 }
 (function tryInit(){ if (typeof ethers !== "undefined") initLaunchpad(); else setTimeout(tryInit, 300); })();
+
 
 
 /* ---------- 队列执行器 ---------- */
