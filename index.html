@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a0e14'/%3E%3Cpath d='M36 8 L20 36 h10 L26 56 L46 26 h-12 z' fill='%2322d3ee'/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="XPower · 三币闭环 DApp 发射台：盲盒抽部件 → 组装 PC → 质押挖矿 → 领取奖励，一键部署你的链上项目（X Layer / Chain 196）。">
+<meta name="theme-color" content="#0a0e14">
+<meta property="og:title" content="XPower · 三币闭环 DApp 发射台">
+<meta property="og:description" content="盲盒抽部件 → 组装 PC → 质押挖矿 → 领取奖励 · 一键部署链上项目（X Layer / Chain 196）">
+<meta property="og:type" content="website">
 <title>XPower · 三币闭环 DApp 发射台</title>
 <style>
 :root{
@@ -27,7 +32,20 @@ header{position:sticky;top:0;z-index:50;background:rgba(10,14,20,.92);backdrop-f
 .nav{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:4px;padding:8px 14px;flex-wrap:wrap}
 .logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:.5px;margin-right:8px}
 .logo .bolt{color:var(--acc);font-size:18px}
-.nav-item{padding:6px 12px;border-radius:8px;color:var(--dim);font-weight:500;white-space:nowrap}
+.nav-item{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;color:var(--dim);font-weight:500;white-space:nowrap}
+.logo-badge{font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--gold);border:1px solid rgba(251,191,36,.4);border-radius:4px;padding:1px 5px;background:rgba(251,191,36,.08)}
+.net-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:99px;padding:4px 10px;white-space:nowrap}
+.net-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(74,222,128,.8)}
+.foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;text-align:left}
+.foot-l{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+.foot-sub{width:100%;color:var(--faint);font-size:11px}
+.foot-r{display:flex;align-items:center;gap:8px;font-size:11px}
+.fitem{color:var(--faint)}
+.foot .mono{color:var(--acc);font-size:11px}
+.foot a{color:var(--dim);text-decoration:none}
+.foot a:hover{color:var(--acc)}
+.foot .v{color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.foot-warn{color:var(--faint);font-size:10px;opacity:.75;margin-top:8px;text-align:center}
 .nav-item:hover{color:var(--txt);background:var(--bg2)}
 .nav-item.on{color:var(--acc);background:rgba(34,211,238,.08)}
 .nav-spacer{flex:1}
@@ -166,12 +184,13 @@ footer{max-width:1000px;margin:0 auto;padding:18px 14px;color:var(--faint);font-
 <body>
 <header>
   <div class="nav">
-    <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="display:inline-block;vertical-align:-3px"><path d="M13 2 L4.5 13.5 H10.5 L9 22 L19.5 10 H13.5 Z" fill="#22d3ee"/></svg> XPower</div>
-    <button class="nav-item" data-v="create">发射台</button>
-    <button class="nav-item" data-v="launch">发币台</button>
-    <button class="nav-item" data-v="boxes">项目列表</button>
-    <button class="nav-item" data-v="assets">我的资产</button>
+    <div class="logo" onclick="go('launch')" style="cursor:pointer" title="XPower 发币台"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="display:inline-block;vertical-align:-4px"><path d="M13 2 L4.5 13.5 H10.5 L9 22 L19.5 10 H13.5 Z" fill="#22d3ee"/></svg><span>XPower</span><span class="logo-badge">X LAYER</span></div>
+    <button class="nav-item" data-v="create"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px"><path d="M4 19.5V6l8-4 8 4v13.5H4z" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v6" stroke="currentColor" stroke-width="1.8"/></svg>发射台</button>
+    <button class="nav-item" data-v="launch"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>发币台</button>
+    <button class="nav-item" data-v="boxes"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>项目列表</button>
+    <button class="nav-item" data-v="assets"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px"><path d="M3 7h18v12H3z" stroke="currentColor" stroke-width="1.8"/><path d="M3 7V5a2 2 0 0 1 2-2h10v4" stroke="currentColor" stroke-width="1.8"/><circle cx="16" cy="13" r="1.6" fill="currentColor"/></svg>我的资产</button>
     <div class="nav-spacer"></div>
+    <span class="net-badge" title="X Layer 主网 · Chain ID 196"><span class="dot"></span>X Layer</span>
     <button class="wbtn" id="walletBtn">连接钱包</button>
   </div>
 </header>
@@ -270,7 +289,17 @@ footer{max-width:1000px;margin:0 auto;padding:18px 14px;color:var(--faint);font-
     <div id="projectBody"></div>
   </section>
 </main>
-<footer>XPower · X Layer · 三币闭环 DApp 发射台</footer>
+<footer>
+  <div class="foot">
+    <div class="foot-l"><b>XPower</b>&nbsp;·&nbsp;三币闭环 DApp 发射台<span class="foot-sub">盲盒抽部件 → 组装 PC → 质押挖矿 → 领取奖励 · X Layer (Chain 196)</span></div>
+    <div class="foot-r">
+      <span class="fitem">发射台合约</span><code class="mono" onclick="copyText('0xdd2694eE483De74a257eB68E53a6272192eA7A23')" style="cursor:pointer" title="点击复制">0xdd26…A23</code>
+      <a class="fitem" href="https://web3.okx.com/zh-hans/explorer/x-layer/evm/address/0xdd2694eE483De74a257eB68E53a6272192eA7A23" target="_blank" rel="noopener">区块浏览器 ↗</a>
+      <span class="fitem v">v1.4.0</span>
+    </div>
+  </div>
+  <div class="foot-warn">请自行核实合约代码与项目风险 · 平台界面不构成投资建议</div>
+</footer>
 
 <!-- 队列执行器 -->
 <div class="qpanel hide" id="qpanel">
@@ -366,6 +395,7 @@ function fmt(n, dec=4){
   const s = Number(n);
   if (s >= 1e6) return (s/1e6).toFixed(2)+"M";
   if (s >= 1e4) return (s/1e3).toFixed(1)+"k";
+  if (s > 0 && s < Math.pow(10, -dec)) return s.toExponential(2);
   return s.toLocaleString("en-US", {maximumFractionDigits: dec});
 }
 function shortAddr(a){ if(!a) return "—"; return a.slice(0,6)+"…"+a.slice(-4); }
@@ -404,8 +434,17 @@ window.ethereum && window.ethereum.on && window.ethereum.on("accountsChanged", (
 window.ethereum && window.ethereum.on && window.ethereum.on("chainChanged", () => { chainIdOk = false; connectWallet(); });
 function refreshWalletUI(){
   const b = $("walletBtn");
-  if (walletAddr) { b.textContent = shortAddr(walletAddr); b.classList.add("on"); }
-  else { b.textContent = "连接钱包"; b.classList.remove("on"); }
+  if (walletAddr) {
+    b.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px;margin-right:5px"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M15 4H6a2 2 0 0 0-2 2v9" stroke="currentColor" stroke-width="1.8"/></svg>' + shortAddr(walletAddr);
+    b.classList.add("on");
+    b.onclick = copyAddr;
+  } else { b.textContent = "连接钱包"; b.classList.remove("on"); b.onclick = connectWallet; }
+}
+async function copyAddr(){
+  try { await navigator.clipboard.writeText(walletAddr); toast("钱包地址已复制", "ok"); } catch(e){ toast("复制失败，请手动复制", "err"); }
+}
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); toast("已复制", "ok"); } catch(e){ toast("复制失败", "err"); }
 }
 $("walletBtn").onclick = connectWallet;
 
