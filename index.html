@@ -105,6 +105,10 @@ h2{font-size:16px;font-weight:700;margin-bottom:10px}
 .pc-scroll::-webkit-scrollbar{width:6px;height:6px}
 .pc-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
 .pc-scroll::-webkit-scrollbar-track{background:transparent}
+
+.stat .v{background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.lplogo{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(251,191,36,.12));border:1px solid rgba(34,211,238,.25);color:var(--txt)}
+
 .pc-scroll .pc-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .stk-chk,.ustk-chk{accent-color:var(--acc)}
 .pill.g{color:var(--green);border-color:rgba(74,222,128,.3)}
@@ -176,6 +180,31 @@ h2{font-size:16px;font-weight:700;margin-bottom:10px}
 /* 权重 */
 .wrow{display:grid;grid-template-columns:24px 1fr 80px 52px;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
 .wrow .wshare{text-align:right;font-size:11px;color:var(--acc);font-style:normal}
+
+/* ===== 视觉美化 v1.5：品质色阶 / 权重条 / 卡片质感 / 滚动条 ===== */
+.pill.t1{color:#9fb0c3;border-color:#3a4a5f}
+.pill.t2{color:#4ade80;border-color:rgba(74,222,128,.35)}
+.pill.t3{color:#38bdf8;border-color:rgba(56,189,248,.35)}
+.pill.t4{color:#a78bfa;border-color:rgba(167,139,250,.35)}
+.pill.t5{color:#fbbf24;border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.08)}
+.pc-item{position:relative}
+.pc-item::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--line)}
+.pc-item.pc-t2::before{background:#4ade80}
+.pc-item.pc-t3::before{background:#38bdf8}
+.pc-item.pc-t4::before{background:#a78bfa}
+.pc-item.pc-t5::before{background:#fbbf24;box-shadow:0 0 10px rgba(251,191,36,.45)}
+.pcard{transition:border-color .15s,transform .15s,box-shadow .15s}
+.pcard:hover{border-color:rgba(251,191,36,.4);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.pc-item{transition:border-color .15s}
+.pc-item:hover{border-color:rgba(34,211,238,.35)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#2a3a52;border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:#38506e}
+::-webkit-scrollbar-track{background:transparent}
+.wrow{position:relative}
+.wbar{position:absolute;left:0;right:0;bottom:-2px;height:3px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}
+.wbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--gold));transition:width .2s}
+
 .wrow input{text-align:right}
 .wsum{font-size:12px;color:var(--dim);margin-top:6px}
 /* 空态 */
@@ -845,6 +874,7 @@ function renderWeights(){
       <span>${nm}</span>
       <input id="w${i}" type="number" min="0" max="1000" value="1" oninput="updateWSum()">
       <em id="wp${i}" class="wshare">12.5%</em>
+      <span class="wbar"><i id="wb${i}" style="width:12.5%"></i></span>
     </div>`).join("");
   updateWSum();
 }
@@ -852,7 +882,10 @@ function updateWSum(){
   const ws = [...Array(8)].map((_, i) => Math.max(0, Number($("w"+i).value) || 0));
   const sum = ws.reduce((a, b) => a + b, 0);
   $("wSum").textContent = sum;
-  ws.forEach((w, i) => { const el = $("wp"+i); if (el) el.textContent = sum ? fmt(w * 100 / sum, 1) + "%" : "0%"; });
+  ws.forEach((w, i) => {
+    const el = $("wp"+i); if (el) el.textContent = sum ? fmt(w * 100 / sum, 1) + "%" : "0%";
+    const bar = $("wb"+i); if (bar) bar.style.width = (sum ? w * 100 / sum : 0) + "%";
+  });
 }
 function resetWeights(){
   [...Array(8)].forEach((_, i) => { $("w"+i).value = 1; });
@@ -1730,7 +1763,7 @@ async function assetsTab(k, btn){
         <div class="stat"><div class="k">待机</div><div class="v">${rows.length - stakedN}</div></div>
         <div class="stat"><div class="k">质押中</div><div class="v g">${stakedN}</div></div>
       </div><div class="pc-scroll"><div class="pc-grid">${rows.map(r => `
-        <div class="pc-item"><div class="pid">#${r.id} <span class="pill ${r.staked ? "g" : "c"}">${r.staked ? "质押中" : "待机"}</span></div>
+        <div class="pc-item pc-t${r.tier}"><div class="pid">#${r.id} <span class="pill t${r.tier}">T${r.tier}</span> <span class="pill ${r.staked ? "g" : "c"}">${r.staked ? "质押中" : "待机"}</span></div>
         <div class="line"><span>品质</span><b>T${r.tier}</b></div>
         <div class="line"><span>算力</span><b>${fmt(r.hash, 0)} H</b></div>
         <div class="line"><span>所属项目</span><b class="mono" style="font-size:10px">${shortAddr(r.box)}</b></div></div>`).join("")}</div></div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>还没有 PC<br><br><button class="btn" onclick="go('boxes')">去项目抽盲盒</button></div>`;
@@ -1749,7 +1782,7 @@ async function assetsTab(k, btn){
         }
       }
       body.innerHTML = rows.length ? `<div class="statbar" style="margin-bottom:12px"><div class="stat"><div class="k">质押中</div><div class="v g">${rows.length} 台</div></div><div class="stat"><div class="k">总算力</div><div class="v c">${fmt(rows.reduce((a, r) => a + r.hash, 0), 0)} H</div></div></div><div class="pc-scroll"><div class="pc-grid">${rows.map(r => `
-        <div class="pc-item"><div class="pid">#${r.id}</div>
+        <div class="pc-item pc-t${r.tier}"><div class="pid">#${r.id} <span class="pill t${r.tier}">T${r.tier}</span></div>
         <div class="line"><span>品质</span><b>T${r.tier}</b></div>
         <div class="line"><span>算力</span><b>${fmt(r.hash, 0)} H</b></div>
         <div class="line"><span>所属项目</span><b class="mono" style="font-size:10px">${shortAddr(r.box)}</b></div></div>`).join("")}</div></div>` : `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M14 6l4-4 4 4-4 4M14 6l-3 3"/><path d="M11 9L2 18l4 4 9-9"/></svg></div>没有质押中的 PC<br><br><button class="btn" onclick="go('boxes')">去项目页质押</button></div>`;
