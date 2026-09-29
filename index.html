@@ -480,10 +480,20 @@ window.ethereum && window.ethereum.on && window.ethereum.on("chainChanged", () =
 function refreshWalletUI(){
   const b = $("walletBtn");
   if (walletAddr) {
-    b.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px;margin-right:5px"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M15 4H6a2 2 0 0 0-2 2v9" stroke="currentColor" stroke-width="1.8"/></svg>' + shortAddr(walletAddr);
+    b.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px;margin-right:5px"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M15 4H6a2 2 0 0 0-2 2v9" stroke="currentColor" stroke-width="1.8"/></svg>' + shortAddr(walletAddr) + ' <em id="xpwrBal" style="font-style:normal;opacity:.85"></em>';
     b.classList.add("on");
     b.onclick = copyAddr;
+    loadXprBal();
   } else { b.textContent = "连接钱包"; b.classList.remove("on"); b.onclick = connectWallet; }
+}
+async function loadXprBal(){
+  const el = $("xpwrBal"); if (!el || !walletAddr) return;
+  try {
+    const prov = await getProvider();
+    const tk = new ethers.Contract(XPWR, ERC20_ABI, prov);
+    const bal = await tk.balanceOf(walletAddr);
+    el.textContent = " · " + fmt(fromWei(bal), 2) + " XPR";
+  } catch(e){ el.textContent = ""; }
 }
 async function copyAddr(){
   try { await navigator.clipboard.writeText(walletAddr); toast("钱包地址已复制", "ok"); } catch(e){ toast("复制失败，请手动复制", "err"); }
@@ -1499,20 +1509,28 @@ async function renderMarket(b){
     const prov = await getProvider();
     const market = new ethers.Contract(projectMeta.market, ABI.XPowerMarket, prov);
     const orderCount = Number(await market.orderCount());
+    b.innerHTML = `<div class="empty" style="color:var(--dim)">读取挂单中…（共 ${orderCount} 单）</div>`;
     const orders = [];
     const circP = new ethers.Contract(projectMeta.circuit, ABI.XPowerCircuit, prov);
-    for (let i = 1; i <= orderCount; i++) {
-      try {
+    const total = Math.min(orderCount, 80);
+    const BATCH = 10;
+    for (let base = 1; base <= total; base += BATCH) {
+      const batch = [];
+      for (let i = base; i < base + BATCH && i <= total; i++) batch.push(i);
+      const rs = await Promise.allSettled(batch.map(async i => {
         const o = { oid: i, ...(await market.orders(i)) };
         if (Number(o.kind) === 2) { try { const p = await circP.pcs(Number(o.sub)); o.tier = Number(p.tier); o.hash = Number(p.hashRate); } catch(e){} }
-        orders.push(o);
-      } catch(e){}
-      if (orders.length >= 80) break;
+        return o;
+      }));
+      rs.forEach((r, idx) => { if (r.status === "fulfilled") orders.push(r.value); });
+      b.innerHTML = `<div class="empty" style="color:var(--dim)">读取挂单中… ${Math.min(base + BATCH - 1, total)}/${total}</div>`;
     }
+    const failN = total - orders.length;
     const pcs = orders.filter(o => Number(o.kind) === 2 && o.active);
     const parts = orders.filter(o => Number(o.kind) === 1 && o.active);
     const mine = walletAddr ? orders.filter(o => o.seller.toLowerCase() === walletAddr.toLowerCase()) : [];
     marketTabData = { pcs, parts, mine };
+    if (failN > 0) toast(failN + " 个挂单读取失败（RPC 波动），可切换网络后重试", "err");
     b.innerHTML = `
       <div class="tabs">
         <button class="tab on" data-mt="pc" onclick="marketTab('pc', this)">PC 市场（${pcs.length}）</button>
