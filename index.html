@@ -988,6 +988,7 @@ async function loadProjects(){
   const el = $("boxList");
   el.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>加载项目中…</div>`;
   try {
+    const projs = [...userProjects].reverse();
     const prov = await getProvider();
     const reads = await Promise.allSettled(projs.map(async (p) => {
       try {
