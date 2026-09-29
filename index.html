@@ -926,16 +926,19 @@ async function loadProjects(){
     const projs = [...userProjects].reverse();
     const rows = [];
     for (const p of projs) {
-      let info = "本地记录";
+      let info = "本地记录", sold = 0, total = 0;
       try {
         const box = new ethers.Contract(p.box, ABI.XPowerBox, await getProvider());
         const b1 = await readBox(box, 1);
-        info = `${fmt(fromWei(b1.price, p.dec||18), 6)} /盒 · 已开 ${Number(b1.sold)}/${Number(b1.total)}`;
+        sold = Number(b1.sold); total = Number(b1.total);
+        info = `${fmt(fromWei(b1.price, p.dec||18), 6)} /盒 · 已开 ${sold}/${total}`;
       } catch(e) { info = "读取失败"; }
+      const pct = total ? Math.min(100, sold * 100 / total) : 0;
       rows.push(`
         <div class="pcard" onclick="go('p/${p.box}')">
           <div class="pname"><span class="ptype pt${(p.token||"").length%8}">${PARTS_ICONS[(p.token||"").length%8]}</span>${esc(p.name)}</div>
           <div class="pmeta">${info}</div>
+          <div style="height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:8px 0"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:99px"></div></div>
           <div class="pmeta">创建者：<span class="mono">${shortAddr(p.creator || walletAddr)}</span></div>
           <div class="paddr">${esc(p.box)}</div>
           <div class="pstat"><span class="pill c">已上线</span></div>
@@ -1097,12 +1100,15 @@ async function doOpen(){
       if (qstate.steps.some(s => s.status === "err")) { toast("授权失败，已中止开盒", "err"); return; }
     }
     const box = new ethers.Contract(projectMeta.box, ABI.XPowerBox, signer);
-    toast("开盒中，请在钱包确认…");
-    const tx = await box.openBox(bi + 1, n, { from: walletAddr, gasLimit: 3000000 });
-    await tx.wait();
-    toast("开盒成功", "ok");
-    renderOpen($("projTabBody"));
-    refreshProjectStats();
+    qstate.steps = [];
+    qAdd("开盒 " + n + " 个", async () => {
+      const tx = await box.openBox(bi + 1, n, { from: walletAddr, gasLimit: 3000000 });
+      await tx.wait();
+      renderOpen($("projTabBody"));
+      refreshProjectStats();
+      return "开盒成功";
+    });
+    await qRun();
   } catch(e) {
     toast("开盒失败：" + (e.message || ""), "err");
   }
@@ -1201,11 +1207,14 @@ async function doAssemble(){
       return;
     }
     const circ = new ethers.Contract(projectMeta.circuit, ABI.XPowerCircuit, signer);
-    toast("组装中，请在钱包确认…");
-    const tx = await circ.batchAssembleTier(n, tier, { from: walletAddr, gasLimit: 3000000, value: fee });
-    await tx.wait();
-    toast("组装成功 " + n + " 台", "ok");
-    renderAsm($("projTabBody"));
+    qstate.steps = [];
+    qAdd("组装 " + n + " 台", async () => {
+      const tx = await circ.batchAssembleTier(n, tier, { from: walletAddr, gasLimit: 3000000, value: fee });
+      await tx.wait();
+      renderAsm($("projTabBody"));
+      return "组装成功 " + n + " 台";
+    });
+    await qRun();
   } catch(e) {
     toast("组装失败：" + (e.message || ""), "err");
   }
@@ -1288,14 +1297,17 @@ async function renderStake(b){
   }
 }
 async function doStake(ids){
-  const prov = await getProvider();
-  const mining = new ethers.Contract(projectMeta.mining, ABI.XPowerMining, await (window.ethereum ? pickProvider() : prov).getSigner());
-  toast("质押中，请在钱包确认…");
   try {
-    const tx = await mining.batchStake(ids.map(String), { from: walletAddr, gasLimit: 3000000 });
-    await tx.wait();
-    toast("质押成功 " + ids.length + " 台", "ok");
-    renderStake($("projTabBody"));
+    const prov = await getProvider();
+    const mining = new ethers.Contract(projectMeta.mining, ABI.XPowerMining, await (window.ethereum ? pickProvider() : prov).getSigner());
+    qstate.steps = [];
+    qAdd("质押 " + ids.length + " 台", async () => {
+      const tx = await mining.batchStake(ids.map(String), { from: walletAddr, gasLimit: 3000000 });
+      await tx.wait();
+      renderStake($("projTabBody"));
+      return "质押成功 " + ids.length + " 台";
+    });
+    await qRun();
   } catch(e) { toast("质押失败：" + (e.message || ""), "err"); }
 }
 async function doUnstake(ids){
@@ -1310,16 +1322,19 @@ async function doUnstake(ids){
   } catch(e) { toast("解押失败：" + (e.message || ""), "err"); }
 }
 async function doClaim(){
-  const prov = await getProvider();
-  const mining = new ethers.Contract(projectMeta.mining, ABI.XPowerMining, await (window.ethereum ? pickProvider() : prov).getSigner());
   try {
+    const prov = await getProvider();
+    const mining = new ethers.Contract(projectMeta.mining, ABI.XPowerMining, await (window.ethereum ? pickProvider() : prov).getSigner());
     const stIds = (await mining.stakedPCsOf(walletAddr)).map(String);
     if (!stIds.length) { toast("没有可领取的质押", "err"); return; }
-    toast("领取中，请在钱包确认…");
-    const tx = await mining.claim(stIds, { from: walletAddr, gasLimit: 3000000 });
-    await tx.wait();
-    toast("领取成功", "ok");
-    renderStake($("projTabBody"));
+    qstate.steps = [];
+    qAdd("领取 " + stIds.length + " 台质押奖励", async () => {
+      const tx = await mining.claim(stIds, { from: walletAddr, gasLimit: 3000000 });
+      await tx.wait();
+      renderStake($("projTabBody"));
+      return "领取成功";
+    });
+    await qRun();
   } catch(e) { toast("领取失败：" + (e.message || ""), "err"); }
 }
 
