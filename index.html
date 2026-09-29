@@ -546,13 +546,17 @@ async function tradeCalc(){
   } catch(e){ out.textContent = ""; }
 }
 async function doTrade(){
-  if (!walletAddr) { toast("请先连接钱包", "err"); return; }
-  const inp = $("tradeAmt");
+  try {
+    if (!walletAddr) { toast("请先连接钱包", "err"); return; }
+    if (!chainIdOk) { toast("请先切换到 X Layer 网络", "err"); return; }
+    const inp = $("tradeAmt");
   if (!inp || !Number(inp.value)) { toast("请输入数量", "err"); return; }
   if (!LAUNCHPAD || LAUNCHPAD.indexOf("0000000000000000000000000000000000000000") === 2) { toast("发射台未部署", "err"); return; }
-  const signer = await provider.getSigner();
-  const lpS = lpContract.connect(signer);
-  if (tradeMode === "buy") {
+    if (!lpContract) await initLaunchpad();
+    if (!lpContract) { toast("发射台合约连接失败，请刷新重试", "err"); return; }
+    const signer = await provider.getSigner();
+    const lpS = lpContract.connect(signer);
+    if (tradeMode === "buy") {
     qAdd("买入 " + esc(curCoin.slice(0,6)) + "…", async () => {
       const tx = await lpS.buy(curCoin, { from: walletAddr, value: toWei(inp.value) });
       await tx.wait();
@@ -568,8 +572,9 @@ async function doTrade(){
       await loadLaunch(); if (curCoin) renderTrade();
       return "sold";
     });
-  }
-  qRun();
+    }
+    qRun();
+  } catch(e){ toast("交易失败：" + (e.message || e), "err"); console.error(e); }
 }
 function useForProject(){
   const c = coinCache.find(x => x.addr === curCoin);
@@ -580,15 +585,19 @@ function useForProject(){
 }
 /* ---------- 发币 ---------- */
 async function createToken(){
-  if (!walletAddr) { toast("请先连接钱包", "err"); return; }
-  const name = $("lName").value.trim(), symbol = $("lSymbol").value.trim();
+  try {
+    if (!walletAddr) { toast("请先连接钱包", "err"); return; }
+    if (!chainIdOk) { toast("请先切换到 X Layer 网络", "err"); return; }
+    const name = $("lName").value.trim(), symbol = $("lSymbol").value.trim();
   const supply = Number($("lSupply").value), share = Number($("lShare").value);
   if (!name || !symbol) { toast("请填写名称与符号", "err"); return; }
   if (!(supply >= 1)) { toast("总量至少 1", "err"); return; }
   if (!(share >= 0 && share <= 30)) { toast("创建者份额 0–30%", "err"); return; }
-  const signer = await provider.getSigner();
-  const lpS = lpContract.connect(signer);
-  qAdd("免费发币 " + symbol, async () => {
+    if (!lpContract) await initLaunchpad();
+    if (!lpContract) { toast("发射台合约连接失败，请刷新重试", "err"); return; }
+    const signer = await provider.getSigner();
+    const lpS = lpContract.connect(signer);
+    qAdd("免费发币 " + symbol, async () => {
     const tx = await lpS.createToken(name, symbol, toWei(supply), share * 100, { from: walletAddr });
     const rec = await tx.wait();
     let coinAddr = null;
@@ -605,7 +614,8 @@ async function createToken(){
     }
     return coinAddr || "已发币（事件解析失败）";
   });
-  qRun();
+    qRun();
+  } catch(e){ toast("发币失败：" + (e.message || e), "err"); console.error(e); }
 }
 $("btnCreateToken").onclick = createToken;
 /* ---------- 初始化发射台合约 ---------- */
