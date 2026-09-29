@@ -54,9 +54,9 @@ contract XPCoin {
         return true;
     }
 
-    // 发射台专用：从 LP 合约持有的余额转出（创建者份额 / 支付买家）
+    // 发射台专用：从发射台（launchpad）持有的余额转出（创建者份额 / 支付买家）
     function lpSend(address to, uint256 v) external onlyLP returns (bool) {
-        return _move(address(this), to, v);
+        return _move(launchpad, to, v);
     }
 }
 
