@@ -425,7 +425,7 @@ window.addEventListener("hashchange", route);
 ============================================================ */
 const LAUNCHPAD = "0x10Efb93bD6ddAf73EEDd5274fBdB82212E2b7F05"; // XPower 自研发射台
 const LP = window.LP_ABI;
-let curCoin = null, coinCache = [], tradeMode = "buy";
+let curCoin = null, coinCache = [], tradeMode = "buy", lpContract = null;
 
 async function lpRead(){ const p = await getProvider(); return new ethers.Contract(LAUNCHPAD, LP.XPowerLaunchpad, p); }
 async function coinRead(addr){ const p = await getProvider(); return new ethers.Contract(addr, LP.XPCoin, p); }
