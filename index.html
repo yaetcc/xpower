@@ -262,7 +262,7 @@ footer{max-width:1000px;margin:0 auto;padding:18px 14px;color:var(--faint);font-
       <div class="field">
         <label>8 类部件权重（开盒随机抽取比例，总和自动归一化）</label>
         <div id="weightRows"></div>
-        <div class="wsum">权重总和：<b id="wSum">0</b>（平均 = 8×1）</div>
+        <div class="wsum">权重总和：<b id="wSum">0</b>（平均 = 8×1） <button class="btn ghost sm" style="margin-left:8px" onclick="resetWeights()">重置平均</button></div>
       </div>
     </div>
     <div class="card" style="margin-bottom:14px">
@@ -844,12 +844,20 @@ function renderWeights(){
       <span class="ptype pt${i}">${PARTS_ICONS[i]}</span>
       <span>${nm}</span>
       <input id="w${i}" type="number" min="0" max="1000" value="1" oninput="updateWSum()">
+      <em id="wp${i}" class="wshare">12.5%</em>
     </div>`).join("");
   updateWSum();
 }
 function updateWSum(){
   const ws = [...Array(8)].map((_, i) => Math.max(0, Number($("w"+i).value) || 0));
-  $("wSum").textContent = ws.reduce((a, b) => a + b, 0);
+  const sum = ws.reduce((a, b) => a + b, 0);
+  $("wSum").textContent = sum;
+  ws.forEach((w, i) => { const el = $("wp"+i); if (el) el.textContent = sum ? fmt(w * 100 / sum, 1) + "%" : "0%"; });
+}
+function resetWeights(){
+  [...Array(8)].forEach((_, i) => { $("w"+i).value = 1; });
+  updateWSum();
+  toast("权重已重置为平均（1:1:1:1:1:1:1:1）");
 }
 renderWeights();
 
