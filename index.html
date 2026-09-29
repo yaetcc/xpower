@@ -92,6 +92,21 @@ h2{font-size:16px;font-weight:700;margin-bottom:10px}
 .pcard .paddr{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--faint);word-break:break-all}
 .pcard .pstat{margin-top:8px;display:flex;gap:8px;font-size:11px}
 .pill{padding:2px 8px;border-radius:20px;background:var(--bg2);color:var(--dim);border:1px solid var(--line)}
+.tier-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:4px}
+.tier-card{border:1px solid var(--line);border-radius:10px;padding:9px 6px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;user-select:none}
+.tier-card b{display:block;font-size:15px;letter-spacing:.5px}
+.tier-card span{display:block;font-size:11px;color:var(--dim);margin-top:1px}
+.tier-card em{display:block;font-size:10px;color:var(--faint);margin-top:4px;font-style:normal}
+.tier-card:hover{border-color:var(--dim)}
+.tier-card.on{border-color:var(--gold);background:rgba(251,191,36,.1);box-shadow:0 0 0 1px rgba(251,191,36,.25)}
+.tier-card .t1 b{color:#94a3b8}.tier-card.t2 b{color:#4ade80}.tier-card.t3 b{color:#22d3ee}.tier-card.t4 b{color:#a78bfa}.tier-card.t5 b{color:#fbbf24}
+@media(max-width:560px){.tier-grid{grid-template-columns:repeat(3,1fr)}}
+.pc-scroll{max-height:300px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(0,0,0,.15)}
+.pc-scroll::-webkit-scrollbar{width:6px;height:6px}
+.pc-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.pc-scroll::-webkit-scrollbar-track{background:transparent}
+.pc-scroll .pc-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.stk-chk,.ustk-chk{accent-color:var(--acc)}
 .pill.g{color:var(--green);border-color:rgba(74,222,128,.3)}
 .pill.c{color:var(--acc);border-color:rgba(34,211,238,.3)}
 /* ===== 部件 ===== */
@@ -1201,28 +1216,31 @@ async function renderAsm(b){
       <div class="card">
         <h2>组装整机</h2>
         ${needUpg ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:rgba(250,204,21,.12);border:1px solid rgba(250,204,21,.4);border-radius:8px;padding:8px 10px;margin-bottom:10px"><span style="flex:1;min-width:180px;font-size:12px;color:#fde047">组装合约还是旧版（收 XPR），升级后组装费改为 <b>0.001 OKB</b>/台</span><button class="btn" onclick="upgradeCircuit()">升级组装合约</button></div>` : ""}
-        <div class="row" style="justify-content:space-between">
-          <div>
+        <div class="row" style="justify-content:space-between;align-items:flex-end">
+          <div style="flex:1;min-width:0">
             <div class="sub">消耗 <b>0.001 OKB</b> / 台（归平台地址），自选品质组装</div>
-            <div class="row" style="margin-top:8px">
+            <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">
               <label class="sub">数量：</label>
-              <input id="asmN" type="number" value="1" min="1" max="${Number(maxAsm) || 1}" style="width:80px">
-              <label class="sub">品质档位：</label>
-              <select id="asmTier">
-                <option value="1">T1 普通</option>
-                <option value="2">T2 进阶</option>
-                <option value="3">T3 精良</option>
-                <option value="4">T4 稀有</option>
-                <option value="5">T5 传说</option>
-              </select>
-              <button class="btn" id="btnAsm">组装</button>
+              <input id="asmN" type="number" value="1" min="1" max="${Number(maxAsm) || 1}" style="width:72px">
+              <button class="btn ghost sm" onclick="asmAll(${Number(maxAsm) || 1})">全部（${Number(maxAsm)}）</button>
+              <button class="btn" id="btnAsm" style="margin-left:4px">组装</button>
             </div>
+            <div class="sub" style="margin:12px 0 6px">品质档位 · 越高算力越强：</div>
+            <div class="tier-grid">
+              <div class="tier-card on t1" data-t="1" onclick="pickTier(this,1)"><b>T1</b><span>普通</span><em>150–199 H</em></div>
+              <div class="tier-card t2" data-t="2" onclick="pickTier(this,2)"><b>T2</b><span>进阶</span><em>300–398 H</em></div>
+              <div class="tier-card t3" data-t="3" onclick="pickTier(this,3)"><b>T3</b><span>精良</span><em>450–597 H</em></div>
+              <div class="tier-card t4" data-t="4" onclick="pickTier(this,4)"><b>T4</b><span>稀有</span><em>600–796 H</em></div>
+              <div class="tier-card t5" data-t="5" onclick="pickTier(this,5)"><b>T5</b><span>传说</span><em>750–995 H</em></div>
+            </div>
+            <input id="asmTier" value="1" class="hide">
           </div>
         </div>
-        <div id="asmInfo" class="sub" style="margin-top:10px">需要 OKB：${fmt(fromWei(1000000000000000n * BigInt(Math.max(1, Number($("asmN")||1))), 18), 4)}</div>
+        <div id="asmInfo" class="sub" style="margin-top:10px"></div>
       </div>`;
-    $("asmN").oninput = () => { $("asmInfo").textContent = "需要 OKB：" + fmt(fromWei(1000000000000000n * BigInt(Math.max(1, Number($("asmN").value) || 1)), 18), 4); };
+    $("asmN").oninput = asmCalc;
     $("btnAsm").onclick = doAssemble;
+    asmCalc();
   } catch(e) {
     b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>部件读取失败：${esc(e.message)}</div>`;
   }
@@ -1257,6 +1275,22 @@ async function doAssemble(){
   } catch(e) {
     toast("组装失败：" + (e.message || ""), "err");
   }
+}
+function pickTier(el, t){
+  document.querySelectorAll(".tier-card").forEach(x => x.classList.remove("on"));
+  el.classList.add("on");
+  $("asmTier").value = t;
+  asmCalc();
+}
+function asmCalc(){
+  const n = Math.max(1, Number($("asmN") ? $("asmN").value : 1) || 1);
+  const t = Number($("asmTier").value) || 1;
+  const fee = 1000000000000000n * BigInt(n);
+  const lo = t * 150 * n, hi = t * 199 * n;
+  if ($("asmInfo")) $("asmInfo").innerHTML = '需要 OKB：<b style="color:var(--gold)">' + fmt(fromWei(fee, 18), 4) + '</b> · 预估总算力 <b style="color:var(--acc)">' + fmt(lo, 0) + '–' + fmt(hi, 0) + ' H</b>（T' + t + ' × ' + n + ' 台）';
+}
+function asmAll(max){
+  if ($("asmN")) { $("asmN").value = max; asmCalc(); }
 }
 async function upgradeCircuit(){
   if (!walletAddr) { toast("请先连接钱包", "err"); return; }
@@ -1302,6 +1336,8 @@ async function renderStake(b){
       const s = await circ.pcs(id);
       return { id, tier: Number(s.tier), hash: Number(s.hashRate) };
     };
+    const stakedRows = await Promise.all(stakedIds.map(pcInfo));
+    const idleRows = await Promise.all(idleIds.map(pcInfo));
     b.innerHTML = `
       <div class="statbar">
         <div class="stat"><div class="k">质押算力</div><div class="v c">${fmt(Number(myHash), 0)} H</div></div>
@@ -1311,25 +1347,49 @@ async function renderStake(b){
       </div>
       <div class="card" style="margin-bottom:12px">
         <h2>质押中的 PC（${stakedIds.length}）</h2>
-        ${stakedIds.length ? `<div class="pc-grid">${(await Promise.all(stakedIds.map(pcInfo))).map(p => `
-          <div class="pc-item"><div class="pid">#${p.id}</div><div class="line"><span>T${p.tier}</span><b>${fmt(p.hash, 0)} H</b></div></div>`).join("")}</div>
-          <div class="row" style="margin-top:12px"><button class="btn ghost sm" id="btnUnstake">批量解押</button></div>` : `<div class="empty" style="padding:16px">暂无质押</div>`}
+        ${stakedIds.length ? `
+          <div class="row" style="margin:8px 0 10px;gap:12px;flex-wrap:wrap">
+            <label class="sub" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" class="ustk-chk" id="unstkAll">全选</label>
+            <span class="sub">已选 <b id="unstkSel" style="color:var(--acc)">0</b> 台</span>
+            <button class="btn ghost sm" id="btnUnstake" disabled>批量解押</button>
+          </div>
+          <div class="pc-scroll"><div class="pc-grid">${stakedRows.map(p => `
+            <div class="pc-item"><label style="display:flex;gap:6px;align-items:flex-start;cursor:pointer"><input type="checkbox" class="ustk-chk" data-id="${p.id}"><div><div class="pid">#${p.id}</div><div class="line"><span>T${p.tier}</span><b>${fmt(p.hash, 0)} H</b></div></div></label></div>`).join("")}</div></div>` : `<div class="empty" style="padding:16px">暂无质押</div>`}
       </div>
       <div class="card" style="margin-bottom:12px">
         <h2>待机中的 PC（${idleIds.length}）</h2>
-        ${idleIds.length ? `<div class="pc-grid">${(await Promise.all(idleIds.slice(0, 30).map(pcInfo))).map(p => `
-          <div class="pc-item"><div class="pid">#${p.id}</div><div class="line"><span>T${p.tier}</span><b>${fmt(p.hash, 0)} H</b></div></div>`).join("")}${idleIds.length > 30 ? `<div class="sub" style="margin-top:8px">…共 ${idleIds.length} 台</div>` : ""}</div>
-          <div class="row" style="margin-top:12px"><button class="btn" id="btnStake">批量质押</button></div>` : `<div class="empty" style="padding:16px">暂无待机 PC</div>`}
+        ${idleIds.length ? `
+          <div class="row" style="margin:8px 0 10px;gap:12px;flex-wrap:wrap">
+            <label class="sub" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" class="stk-chk" id="stkAll">全选</label>
+            <span class="sub">已选 <b id="stkSel" style="color:var(--acc)">0</b> 台</span>
+            <button class="btn" id="btnStake" disabled>批量质押</button>
+          </div>
+          <div class="pc-scroll"><div class="pc-grid">${idleRows.map(p => `
+            <div class="pc-item"><label style="display:flex;gap:6px;align-items:flex-start;cursor:pointer"><input type="checkbox" class="stk-chk" data-id="${p.id}"><div><div class="pid">#${p.id}</div><div class="line"><span>T${p.tier}</span><b>${fmt(p.hash, 0)} H</b></div></div></label></div>`).join("")}</div></div>` : `<div class="empty" style="padding:16px">暂无待机 PC</div>`}
       </div>
       <div class="card">
         <h2>领取奖励</h2>
-        <div class="row" style="justify-content:space-between">
+        <div class="row" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
           <div class="sub">质押按算力份额分红，6 小时一个周期；解押后算力即时退出</div>
-          <div class="row"><button class="btn gold sm" id="btnClaim">领取</button></div>
+          <button class="btn gold sm" id="btnClaim">领取</button>
         </div>
       </div>`;
-    if (stakedIds.length) $("btnUnstake").onclick = () => doUnstake(stakedIds);
-    if (idleIds.length) $("btnStake").onclick = () => doStake(idleIds);
+    const bindSel = (chkSel, allSel, selEl, btnId, fn) => {
+      const chks = () => [...document.querySelectorAll(chkSel)];
+      const upd = () => {
+        const n = chks().filter(c => c.checked).length;
+        $(selEl).textContent = n;
+        $(btnId).disabled = n === 0;
+      };
+      chks().forEach(c => { c.onchange = upd; });
+      $(allSel).onchange = (e) => { chks().forEach(c => { c.checked = e.target.checked; }); upd(); };
+      $(btnId).onclick = () => {
+        const ids = chks().filter(c => c.checked).map(c => c.dataset.id);
+        if (ids.length) fn(ids);
+      };
+    };
+    if (stakedIds.length) bindSel(".ustk-chk", "unstkAll", "unstkSel", "btnUnstake", doUnstake);
+    if (idleIds.length) bindSel(".stk-chk", "stkAll", "stkSel", "btnStake", doStake);
     $("btnClaim").onclick = doClaim;
   } catch(e) {
     b.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.8" style="opacity:.85"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5M12 17v.5"/></svg></div>质押数据读取失败：${esc(e.message)}</div>`;
@@ -1387,8 +1447,13 @@ async function renderMarket(b){
     const market = new ethers.Contract(projectMeta.market, ABI.XPowerMarket, prov);
     const orderCount = Number(await market.orderCount());
     const orders = [];
+    const circP = new ethers.Contract(projectMeta.circuit, ABI.XPowerCircuit, prov);
     for (let i = 1; i <= orderCount; i++) {
-      try { orders.push({ oid: i, ...(await market.orders(i)) }); } catch(e){}
+      try {
+        const o = { oid: i, ...(await market.orders(i)) };
+        if (Number(o.kind) === 2) { try { const p = await circP.pcs(Number(o.sub)); o.tier = Number(p.tier); o.hash = Number(p.hashRate); } catch(e){} }
+        orders.push(o);
+      } catch(e){}
       if (orders.length >= 80) break;
     }
     const pcs = orders.filter(o => Number(o.kind) === 2 && o.active);
@@ -1417,8 +1482,9 @@ function renderMarketList(t, pcs, parts, mine){
     if (!pcs.length) return `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>暂无 PC 挂单</div>`;
     return `<div class="orders">${pcs.map(o => `
       <div class="order">
-        <div class="ob"><b>PC #${Number(o.sub)}</b> <span class="mono" style="font-size:11px">× ${Number(o.qty)}</span></div>
+        <div class="ob"><b>PC #${Number(o.sub)}</b>${o.tier ? `<span class="pill ${o.tier >= 4 ? "g" : "c"}" style="margin-left:6px">T${o.tier} · ${fmt(o.hash, 0)} H</span>` : ""} <span class="mono" style="font-size:11px">× ${Number(o.qty)}</span></div>
         <div class="ob"><span class="price">${fmt(fromWei(o.price, projectMeta.dec), 4)}</span> 项目代币</div>
+        <div class="ob mono" style="font-size:10px;color:var(--faint)">卖家 ${shortAddr(o.seller)}</div>
         <button class="btn sm" onclick="buyOrder(${o.oid})">购买</button>
       </div>`).join("")}</div>`;
   }
@@ -1474,11 +1540,14 @@ async function cancelOrder(oid){
   try {
     const prov = await getProvider();
     const market = new ethers.Contract(projectMeta.market, ABI.XPowerMarket, await (window.ethereum ? pickProvider() : prov).getSigner());
-    toast("撤单中，请在钱包确认…");
-    const tx = await market.cancel(oid, { from: walletAddr, gasLimit: 2000000 });
-    await tx.wait();
-    toast("已撤单", "ok");
-    renderMarket($("projTabBody"));
+    qstate.steps = [];
+    qAdd("撤单 #" + oid, async () => {
+      const tx = await market.cancel(oid, { from: walletAddr, gasLimit: 2000000 });
+      await tx.wait();
+      renderMarket($("projTabBody"));
+      return "已撤单";
+    });
+    await qRun();
   } catch(e) { toast("撤单失败：" + (e.message || ""), "err"); }
 }
 function renderSellPanel(){
@@ -1490,16 +1559,19 @@ function renderSellPanel(){
       </div>
       <div id="sellPartPanel" class="hide">
         <div class="field"><label>部件类型</label>
-          <select id="sellPartType">${PARTS_NAMES.map((n, i) => `<option value="${i+1}">${n}</option>`).join("")}</select>
+          <select id="sellPartType" onchange="sellPartHint()">${PARTS_NAMES.map((n, i) => `<option value="${i+1}">${n}</option>`).join("")}</select>
+          <div id="sellPartHint" class="hint">我的持有量：读取中…</div>
         </div>
         <div class="grid2">
-          <div class="field"><label>数量</label><input id="sellQty" type="number" value="1" min="1"></div>
-          <div class="field"><label>单价（项目代币）</label><input id="sellPrice" type="number" value="1" step="0.01" min="0"></div>
+          <div class="field"><label>数量</label><input id="sellQty" type="number" value="1" min="1" oninput="sellTotalCalc()"></div>
+          <div class="field"><label>单价（项目代币）</label><input id="sellPrice" type="number" value="1" step="0.01" min="0" oninput="sellTotalCalc()"></div>
         </div>
+        <div id="sellPartTotal" class="hint">挂单总价：0</div>
       </div>
       <div id="sellPcPanel">
         <div class="field"><label>选择 PC（我的待机整机）</label><select id="sellPcSel">读取中…</select></div>
-        <div class="field"><label>单价（项目代币）</label><input id="sellPrice2" type="number" value="1" step="0.01" min="0"></div>
+        <div class="field"><label>单价（项目代币）</label><input id="sellPrice2" type="number" value="1" step="0.01" min="0" oninput="sellTotalCalc()"></div>
+        <div id="sellPcTotal" class="hint">挂单总价：0</div>
       </div>
       <button class="btn" id="btnSell">挂单</button>
     </div>`;
@@ -1520,7 +1592,30 @@ function renderSellPanel(){
       } catch(e) { $("sellPcSel").innerHTML = `<option value="">读取失败</option>`; }
     })();
   }
+  sellPartHint();
+  sellTotalCalc();
   $("btnSell").onclick = doSell;
+}
+async function sellPartHint(){
+  const el = $("sellPartHint"); if (!el || !walletAddr) return;
+  const t = Number($("sellPartType").value) || 1;
+  try {
+    const prov = await getProvider();
+    const parts = new ethers.Contract(projectMeta.parts, ABI.XPowerParts, prov);
+    const c = await parts.bal(t, walletAddr);
+    el.textContent = "我的持有量：" + Number(c) + " 件";
+  } catch(e) { el.textContent = "我的持有量：读取失败"; }
+}
+function sellTotalCalc(){
+  const kind = $("sellKind").value;
+  if (kind === "part") {
+    const q = Math.max(0, Number($("sellQty").value) || 0);
+    const p = Math.max(0, Number($("sellPrice").value) || 0);
+    if ($("sellPartTotal")) $("sellPartTotal").textContent = "挂单总价：" + fmt(q * p, 4) + " 项目代币";
+  } else {
+    const p = Math.max(0, Number($("sellPrice2").value) || 0);
+    if ($("sellPcTotal")) $("sellPcTotal").textContent = "挂单总价：" + fmt(p, 4) + " 项目代币";
+  }
 }
 async function doSell(){
   if (!walletAddr) { toast("请先连接钱包", "err"); return; }
@@ -1534,19 +1629,26 @@ async function doSell(){
       if (!id) { toast("请选择要出售的 PC", "err"); return; }
       const price = toWei(Number($("sellPrice2").value), projectMeta.dec);
       if (price <= 0n) { toast("单价需大于 0", "err"); return; }
-      toast("挂单中，请在钱包确认…");
-      const tx = await market.sellPC(id, price, { from: walletAddr, gasLimit: 2000000 });
-      await tx.wait();
+      qstate.steps = [];
+      qAdd("挂单 PC #" + id, async () => {
+        const tx = await market.sellPC(id, price, { from: walletAddr, gasLimit: 2000000 });
+        await tx.wait();
+        return "挂单成功";
+      });
+      await qRun();
     } else {
       const ptype = Number($("sellPartType").value);
       const qty = Number($("sellQty").value) || 1;
       const price = toWei(Number($("sellPrice").value), projectMeta.dec);
       if (price <= 0n) { toast("单价需大于 0", "err"); return; }
-      toast("挂单中，请在钱包确认…");
-      const tx = await market.sellPart(ptype, qty, price, { from: walletAddr, gasLimit: 2000000 });
-      await tx.wait();
+      qstate.steps = [];
+      qAdd("挂单部件 ×" + qty, async () => {
+        const tx = await market.sellPart(ptype, qty, price, { from: walletAddr, gasLimit: 2000000 });
+        await tx.wait();
+        return "挂单成功";
+      });
+      await qRun();
     }
-    toast("挂单成功", "ok");
     renderMarket($("projTabBody"));
   } catch(e) { toast("挂单失败：" + (e.message || ""), "err"); }
 }
