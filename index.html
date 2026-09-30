@@ -854,7 +854,9 @@ async function tokenInfo(addr){
   try {
     const prov = await getProvider();
     const tk = new ethers.Contract(addr, ERC20_ABI, prov);
-    const [sym, name] = await Promise.all([tk.symbol(), tk.name()]);
+    let sym = null, name = null;
+    try { sym = await tk.symbol(); } catch(e){}
+    try { name = await tk.name(); } catch(e){}
     const info = { sym, name };
     try { const m = JSON.parse(localStorage.getItem(TOKEN_CACHE_KEY) || "{}"); m[a] = info; localStorage.setItem(TOKEN_CACHE_KEY, JSON.stringify(m)); } catch(e){}
     return info;
