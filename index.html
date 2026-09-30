@@ -108,6 +108,10 @@ h2{font-size:16px;font-weight:700;margin-bottom:10px}
 
 .stat .v{background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .lplogo{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(251,191,36,.12));border:1px solid rgba(34,211,238,.25);color:var(--txt)}
+.lplogo img{width:100%;height:100%;border-radius:10px;object-fit:cover;display:block}
+.logo-pick{display:flex;align-items:center;gap:10px}
+.logo-pick img{width:40px;height:40px;border-radius:10px;object-fit:cover;border:1px solid var(--line)}
+.logo-pick input[type=file]{font-size:11px;color:var(--dim)}
 
 .pc-scroll .pc-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .stk-chk,.ustk-chk{accent-color:var(--acc)}
@@ -253,7 +257,9 @@ footer{max-width:1000px;margin:0 auto;padding:18px 14px;color:var(--faint);font-
         <div class="field"><label>代币名称</label><input id="lName" placeholder="如 MyCoin" style="width:100%"></div>
         <div class="field"><label>代币符号</label><input id="lSymbol" placeholder="如 MYC" style="width:100%"></div>
         <div class="field"><label>总量（≥ 1，建议 1 亿起）</label><input id="lSupply" type="number" value="100000000" min="1" style="width:100%"></div>
-        <div class="field"><label>创建者份额（0–30%，默认 20%）</label><input id="lShare" type="number" value="20" min="0" max="30" style="width:100%"><div class="hint">剩余进交易曲线池 · 代币完全可控可转账 · 发币即上内置市场</div></div>
+        <div class="field"><label>创建者份额（0–5%，默认 0）</label><input id="lShare" type="number" value="0" min="0" max="5" style="width:100%"></div>
+        <div class="field"><label>币 Logo（可选，自动压缩为 128px 显示于币卡/项目卡）</label><div class="logo-pick"><img id="logoPrev" style="display:none"><input type="file" accept="image/*" onchange="pickLogo(this)"></div></div>
+        <div class="hint">剩余进交易曲线池 · 代币完全可控可转账 · 发币即上内置市场</div>
         <button class="btn" id="btnCreateToken" style="width:100%">免费发币</button>
         <div id="createTokenInfo" style="margin-top:8px"></div>
       </div>
@@ -275,18 +281,19 @@ footer{max-width:1000px;margin:0 auto;padding:18px 14px;color:var(--faint);font-
     <div class="card" style="margin-bottom:14px">
       <h2>① 项目代币（在发币台免费发币后粘贴合约地址）</h2>
       <div class="field">
-        <label>项目代币合约地址（盲盒抽卡消耗 · 质押挖矿产出）</label>
-        <div class="row" style="gap:8px"><input id="fToken" value="0x4049CC21FB1E1Be5406CBBd3f66F9BF5b3d366c6" style="flex:1;min-width:0"><button class="btn ghost sm" onclick="go('launch')">去发币台发币</button></div>
+        <label>代币合约地址（抽卡消耗 · 质押产出 · 开盒奖励）</label>
+        <div class="row" style="gap:8px"><input id="fToken" value="0x4049CC21FB1E1Be5406CBBd3f66F9BF5b3d366c6" onchange="identToken()" style="flex:1;min-width:0"><button class="btn ghost sm" onclick="go('launch')">去发币台发币</button></div>
+        <div id="fTokenHint"></div>
         <div class="hint">90% 抽卡消耗进分红池，10% 进你的钱包；质押 PC 按算力份额领取分红池。默认已填入平台币 XPR，可直接使用</div>
       </div>
     </div>
     <div class="card" style="margin-bottom:14px">
       <h2>② 盲盒配置</h2>
       <div class="grid2">
-        <div class="field"><label>盲盒总量（≤ 10000）</label><input id="fTotal" type="number" value="10000" min="1" max="10000"></div>
-        <div class="field"><label>单价（项目代币，建议 0.01 起）</label><input id="fPrice" type="number" value="0.01" step="0.0001" min="0"></div>
+        <div class="field"><label>盲盒总量（≤ 100000）</label><input id="fTotal" type="number" value="10000" min="1" max="100000"></div>
+        <div class="field"><label>单价（代币，建议 0.01 起）</label><input id="fPrice" type="number" value="0.01" step="0.0001" min="0"></div>
         <div class="field"><label>单次开盒上限（建议 100）</label><input id="fOpenMax" type="number" value="100" min="1" max="500"></div>
-        <div class="field"><label>项目代币精度 decimals（默认 18）</label><input id="fDec" type="number" value="18" min="0" max="18"></div>
+        <div class="field"><label>代币精度 decimals（默认 18）</label><input id="fDec" type="number" value="18" min="0" max="18"></div>
       </div>
       <div class="field">
         <label>8 类部件权重（开盒随机抽取比例，总和自动归一化）</label>
@@ -606,7 +613,7 @@ function renderCoinList(){
     const mcap = (Number(c.t.sold)/1e18) * p;
     return '<div class="pcard" onclick="openTrade(\'' + c.addr + '\')" style="margin-bottom:8px">' +
       '<div class="lrow">' +
-      '<div class="lplogo">' + esc(c.t.symbol.slice(0,1).toUpperCase()) + '</div>' +
+      '<div class="lplogo">' + logoHtml(c.addr, c.t.symbol.slice(0,1).toUpperCase()) + '</div>' +
       '<div style="flex:1;min-width:0">' +
       '<div class="pname">' + esc(c.t.symbol) + ' <span style="color:var(--faint);font-weight:400;font-size:12px">' + esc(c.t.name) + '</span>' +
       (mine ? ' <span class="pill g">我创建</span>' : '') + '</div>' +
@@ -631,10 +638,20 @@ function useForProjectAddr(addr){
 }
 async function openTrade(addr){
   curCoin = addr;
+  const page = $("coinPage"), body = $("coinPageBody"), tt = $("coinPageTitle");
+  if (!page) { await loadLaunch(); renderTrade($("tradeSel")); return; }
   if (!coinCache.some(c => c.addr === addr)) await loadLaunch();
-  renderTrade();
-  const el = $("tradeSel");
-  if (el) try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch(e){}
+  const c0 = coinCache.find(x => x.addr === curCoin);
+  if (tt) tt.textContent = (c0 && c0.t && c0.t.symbol ? c0.t.symbol : "交易") + " · 交易";
+  page.classList.add("on");
+  document.body.style.overflow = "hidden";
+  await renderTrade(body);
+  try { page.scrollTop = 0; } catch(e){}
+}
+function hideCoinPage(){
+  const page = $("coinPage");
+  if (page) page.classList.remove("on");
+  document.body.style.overflow = "";
 }
 function curveSVG(t){
   const W = 300, H = 110, W2 = W - 60, H2 = H - 40;
@@ -670,9 +687,9 @@ async function renderTrade(){
   const mcap = (Number(t.sold)/1e18) * p;
   let okbBal = 0;
   if (walletAddr) { try { okbBal = Number(await (await getProvider()).getBalance(walletAddr)) / 1e18; } catch(e){} }
-  $("tradeSel").innerHTML =
+  el.innerHTML =
     '<div class="lrow" style="margin-bottom:8px">' +
-    '<div class="lplogo">' + esc(t.symbol.slice(0,1).toUpperCase()) + '</div>' +
+    '<div class="lplogo">' + logoHtml(curCoin, t.symbol.slice(0,1).toUpperCase()) + '</div>' +
     '<div style="flex:1;min-width:0">' +
     '<div style="font-weight:700;font-size:16px">' + esc(t.symbol) + ' <span style="color:var(--faint);font-weight:400;font-size:12px">' + esc(t.name) + '</span></div>' +
     '<div class="paddr">' + shortAddr(curCoin) + ' <button class="lbtn" onclick="copyAddr(\'' + curCoin + '\')">复制地址</button></div>' +
@@ -770,9 +787,75 @@ function useForProject(){
   if (!c) { toast("请先选择一个代币", "err"); return; }
   const f = $("fToken"); if (f) f.value = curCoin;
   go("create");
-  toast("已填入项目代币地址，继续配置盲盒", "ok");
+  toast("已填入代币地址，继续配置盲盒", "ok");
 }
 /* ---------- 发币 ---------- */
+let pendingLogo = null;
+function pickLogo(inp){
+  const f = inp.files && inp.files[0];
+  if (!f) return;
+  if (!/^image\//.test(f.type)) { toast("请选择图片文件", "err"); inp.value = ""; return; }
+  const rd = new FileReader();
+  rd.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      const sz = 128;
+      c.width = sz; c.height = sz;
+      const ctx = c.getContext("2d");
+      const r = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width - r) / 2, (img.height - r) / 2, r, r, 0, 0, sz, sz);
+      pendingLogo = c.toDataURL("image/png");
+      const pv = $("logoPrev");
+      if (pv) { pv.src = pendingLogo; pv.style.display = "block"; }
+      toast("Logo 已就绪", "ok");
+    };
+    img.src = e.target.result;
+  };
+  rd.readAsDataURL(f);
+}
+function saveLogo(addr, data){
+  if (!addr || !data) return;
+  try {
+    const m = JSON.parse(localStorage.getItem("xp4_logos") || "{}");
+    m[addr.toLowerCase()] = data;
+    localStorage.setItem("xp4_logos", JSON.stringify(m));
+  } catch(e){}
+}
+function getLogo(addr){
+  if (!addr) return null;
+  try {
+    const m = JSON.parse(localStorage.getItem("xp4_logos") || "{}");
+    return m[addr.toLowerCase()] || null;
+  } catch(e){ return null; }
+}
+function logoHtml(addr, letter){
+  const l = getLogo(addr);
+  return l ? '<img src="' + l + '" alt="">' : esc(letter || "X");
+}
+const TOKEN_CACHE_KEY = "xp4_tokens";
+async function tokenInfo(addr){
+  if (!addr) return { sym: null, name: null };
+  const a = addr.toLowerCase();
+  try { const m = JSON.parse(localStorage.getItem(TOKEN_CACHE_KEY) || "{}"); if (m[a]) return m[a]; } catch(e){}
+  try {
+    const prov = await getProvider();
+    const tk = new ethers.Contract(addr, ERC20_ABI, prov);
+    const [sym, name] = await Promise.all([tk.symbol(), tk.name()]);
+    const info = { sym, name };
+    try { const m = JSON.parse(localStorage.getItem(TOKEN_CACHE_KEY) || "{}"); m[a] = info; localStorage.setItem(TOKEN_CACHE_KEY, JSON.stringify(m)); } catch(e){}
+    return info;
+  } catch(e) { return { sym: null, name: null }; }
+}
+async function identToken(){
+  const v = $("fToken").value.trim();
+  if (!/^0x[a-fA-F0-9]{40}$/.test(v)) { const h = $("fTokenHint"); if (h) h.innerHTML = ""; return; }
+  const info = await tokenInfo(v);
+  const h = $("fTokenHint");
+  if (!h) return;
+  if (info.sym) h.innerHTML = '<div class="hint" style="color:var(--acc)">已识别：<b>' + esc(info.sym) + '</b> · ' + esc(info.name || "") + '</div>';
+  else h.innerHTML = '<div class="hint" style="color:var(--warn)">未识别到代币信息，请确认地址正确</div>';
+}
 async function createToken(){
   try {
     if (!walletAddr) { toast("请先连接钱包", "err"); return; }
@@ -795,6 +878,8 @@ async function createToken(){
         if (ev) coinAddr = ev.args.coin;
       } catch(e){}
       if (coinAddr) {
+        saveLogo(coinAddr, pendingLogo);
+        pendingLogo = null;
         localStorage.setItem("xp4_lastCoin", coinAddr);
         const f = $("fToken"); if (f) f.value = coinAddr;
         curCoin = coinAddr;
@@ -908,10 +993,10 @@ renderWeights();
 
 async function validateForm(){
   const t = $("fToken").value.trim();
-  if (!/^0x[a-fA-F0-9]{40}$/.test(t)) throw new Error("项目代币地址格式不正确");
-  if (t.toLowerCase() === walletAddr.toLowerCase()) throw new Error("项目代币不能填自己的钱包地址，请填代币合约地址");
+  if (!/^0x[a-fA-F0-9]{40}$/.test(t)) throw new Error("代币地址格式不正确");
+  if (t.toLowerCase() === walletAddr.toLowerCase()) throw new Error("代币不能填自己的钱包地址，请填代币合约地址");
   const total = Number($("fTotal").value);
-  if (!(total >= 1 && total <= 10000)) throw new Error("盲盒总量需在 1~10000 之间");
+  if (!(total >= 1 && total <= 100000)) throw new Error("盲盒总量需在 1~100000 之间");
   const price = Number($("fPrice").value);
   if (!(price > 0)) throw new Error("单价需大于 0");
   const ws = [...Array(8)].map((_, i) => Math.max(0, Number($("w"+i).value) || 0));
@@ -1097,6 +1182,9 @@ async function loadProject(boxAddr){
     const circuit = new ethers.Contract(circuitAddr, ABI.XPowerCircuit, prov);
     const [xpwrAddr, marketAddr, creator] = await Promise.all([circuit.xpwr(), circuit.market(), circuit.creator()]);
     projectMeta = { box: boxAddr, token: payToken, total: Number(b1.total), sold: Number(b1.sold), price: b1.price, openMax: Number(maxOpen), boxCount: Number(boxCount), creator, parts: partsAddr, mining: miningAddr, market: marketAddr, circuit: circuitAddr, xpwr: xpwrAddr, dec: p ? (p.dec||18) : 18 };
+    const tinfo = await tokenInfo(payToken);
+    projectMeta.sym = tinfo.sym || "项目代币";
+    projectMeta.tname = tinfo.name || "";
     const tk = new ethers.Contract(payToken, ERC20_ABI, prov);
     let poolBal = "—", mined = "—";
     if (tk) {
@@ -1114,14 +1202,10 @@ async function loadProject(boxAddr){
           <div class="sub" style="margin-bottom:12px">创建者：<span class="mono copyable" onclick="copyText('${creator}')">${shortAddr(creator)}</span></div>
           <div class="kv"><span class="k">盲盒总量</span><span class="v">${projectMeta.total}</span></div>
           <div class="kv"><span class="k">已开启</span><span class="v">${projectMeta.sold}</span></div>
-          <div class="kv"><span class="k">单价</span><span class="v">${fmt(fromWei(projectMeta.price, projectMeta.dec), 6)} 项目代币</span></div>
+          <div class="kv"><span class="k">单价</span><span class="v">${fmt(fromWei(projectMeta.price, projectMeta.dec), 6)} ${projectMeta.sym || '项目代币'}</span></div>
           <div class="kv"><span class="k">分红池余额</span><span class="v g">${poolBal}</span></div>
           <div class="kv"><span class="k">抽卡沉淀</span><span class="v c">${mined}</span></div>
         </div>
-      </div>
-      <div style="margin:14px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button onclick="fixBox()" style="background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer">修复盲盒合约（旧版权重缺陷）</button>
-        <span style="font-size:12px;opacity:.6">老项目盲盒权重为 0 无法开盒，一键部署新版实现并升级（需钱包签名 2 次）</span>
       </div>
       <div class="tabs" style="margin-top:18px">
         <button class="tab on" data-tab="open" onclick="projTab('open', this)">抽盲盒</button>
@@ -1164,7 +1248,7 @@ async function renderOpen(b){
       <div class="card" style="margin-bottom:12px">
         <div class="row" style="justify-content:space-between">
           <div>
-            <div class="sub">消耗项目代币抽盲盒：90% 进入分红池（质押挖矿奖励来源），10% 归创建者</div>
+            <div class="sub">消耗${projectMeta.sym || '项目代币'}抽盲盒：90% 进入分红池（质押挖矿奖励来源），10% 归创建者</div>
             <div class="sub" style="margin-top:4px">选择盲盒：</div>
           </div>
           <div class="row">
@@ -1190,7 +1274,7 @@ function openCalc(){
   const n = Math.max(1, Number($("openN").value) || 1);
   const bx = openBoxes[Number($("openSel").value)];
   if (!bx) return;
-  $("openCost").textContent = "本次消耗：" + fmt(fromWei(bx.price * BigInt(n), projectMeta.dec), 6) + " 项目代币";
+  $("openCost").textContent = "本次消耗：" + fmt(fromWei(bx.price * BigInt(n), projectMeta.dec), 6) + " " + (projectMeta.sym || "项目代币");
 }
 async function doOpen(){
   if (!walletAddr) { toast("请先连接钱包", "err"); return; }
@@ -1204,13 +1288,13 @@ async function doOpen(){
     const tk = new ethers.Contract(projectMeta.token, ERC20_ABI, prov);
     const signer = await (window.ethereum ? pickProvider() : prov).getSigner();
     const bal = await tk.balanceOf(walletAddr);
-    if (bal < cost) { toast("项目代币余额不足", "err"); return; }
+    if (bal < cost) { toast((projectMeta.sym || "项目代币") + "余额不足", "err"); return; }
     const allw = await tk.allowance(walletAddr, projectMeta.box);
     if (allw < cost) {
-      toast("请先授权项目代币给盲盒合约", "err");
+      toast("请先授权" + (projectMeta.sym || "项目代币") + "给盲盒合约", "err");
       const tkSigner = new ethers.Contract(projectMeta.token, ERC20_ABI, signer);
       qstate.steps = [];
-      qAdd("授权项目代币", async () => {
+      qAdd("授权" + (projectMeta.sym || "项目代币"), async () => {
         const tx = await tkSigner.approve(projectMeta.box, ethers.MaxUint256);
         await tx.wait();
         return "已授权";
@@ -1556,7 +1640,7 @@ function renderMarketList(t, pcs, parts, mine){
     return `<div class="orders">${pcs.map(o => `
       <div class="order">
         <div class="ob"><b>PC #${Number(o.sub)}</b>${o.tier ? `<span class="pill ${o.tier >= 4 ? "g" : "c"}" style="margin-left:6px">T${o.tier} · ${fmt(o.hash, 0)} H</span>` : ""} <span class="mono" style="font-size:11px">× ${Number(o.qty)}</span></div>
-        <div class="ob"><span class="price">${fmt(fromWei(o.price, projectMeta.dec), 4)}</span> 项目代币</div>
+        <div class="ob"><span class="price">${fmt(fromWei(o.price, projectMeta.dec), 4)}</span> ${projectMeta.sym || '项目代币'}</div>
         <div class="ob mono" style="font-size:10px;color:var(--faint)">卖家 ${o.seller ? shortAddr(o.seller) : '—'}</div>
         <button class="btn sm" onclick="buyOrder(${o.oid})">购买</button>
       </div>`).join("")}</div>`;
@@ -1594,7 +1678,7 @@ async function buyOrder(oid){
     if (allw < price) {
       const tkSigner = new ethers.Contract(projectMeta.token, ERC20_ABI, signer);
       qstate.steps = [];
-      qAdd("授权项目代币给市场", async () => {
+      qAdd("授权" + (projectMeta.sym || "项目代币") + "给市场", async () => {
         const tx = await tkSigner.approve(projectMeta.market, ethers.MaxUint256);
         await tx.wait(); return "已授权";
       });
@@ -1637,13 +1721,13 @@ function renderSellPanel(){
         </div>
         <div class="grid2">
           <div class="field"><label>数量</label><input id="sellQty" type="number" value="1" min="1" oninput="sellTotalCalc()"></div>
-          <div class="field"><label>单价（项目代币）</label><input id="sellPrice" type="number" value="1" step="0.01" min="0" oninput="sellTotalCalc()"></div>
+          <div class="field"><label>单价（${projectMeta.sym || '项目代币'}）</label><input id="sellPrice" type="number" value="1" step="0.01" min="0" oninput="sellTotalCalc()"></div>
         </div>
         <div id="sellPartTotal" class="hint">挂单总价：0</div>
       </div>
       <div id="sellPcPanel">
         <div class="field"><label>选择 PC（我的待机整机）</label><select id="sellPcSel">读取中…</select></div>
-        <div class="field"><label>单价（项目代币）</label><input id="sellPrice2" type="number" value="1" step="0.01" min="0" oninput="sellTotalCalc()"></div>
+        <div class="field"><label>单价（${projectMeta.sym || '项目代币'}）</label><input id="sellPrice2" type="number" value="1" step="0.01" min="0" oninput="sellTotalCalc()"></div>
         <div id="sellPcTotal" class="hint">挂单总价：0</div>
       </div>
       <button class="btn" id="btnSell">挂单</button>
@@ -1684,10 +1768,10 @@ function sellTotalCalc(){
   if (kind === "part") {
     const q = Math.max(0, Number($("sellQty").value) || 0);
     const p = Math.max(0, Number($("sellPrice").value) || 0);
-    if ($("sellPartTotal")) $("sellPartTotal").textContent = "挂单总价：" + fmt(q * p, 4) + " 项目代币";
+    if ($("sellPartTotal")) $("sellPartTotal").textContent = "挂单总价：" + fmt(q * p, 4) + " " + (projectMeta.sym || "项目代币");
   } else {
     const p = Math.max(0, Number($("sellPrice2").value) || 0);
-    if ($("sellPcTotal")) $("sellPcTotal").textContent = "挂单总价：" + fmt(p, 4) + " 项目代币";
+    if ($("sellPcTotal")) $("sellPcTotal").textContent = "挂单总价：" + fmt(p, 4) + " " + (projectMeta.sym || "项目代币");
   }
 }
 async function doSell(){
