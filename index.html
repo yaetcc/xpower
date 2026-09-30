@@ -1530,7 +1530,7 @@ async function renderMarket(b){
     const failN = total - orders.length;
     const pcs = orders.filter(o => Number(o.kind) === 2 && o.active);
     const parts = orders.filter(o => Number(o.kind) === 1 && o.active);
-    const mine = walletAddr ? orders.filter(o => o.seller.toLowerCase() === walletAddr.toLowerCase()) : [];
+    const mine = walletAddr ? orders.filter(o => o.seller && o.seller.toLowerCase() === walletAddr.toLowerCase()) : [];
     marketTabData = { pcs, parts, mine };
     if (failN > 0) toast(failN + " 个挂单读取失败（RPC 波动），可切换网络后重试", "err");
     b.innerHTML = `
@@ -1557,7 +1557,7 @@ function renderMarketList(t, pcs, parts, mine){
       <div class="order">
         <div class="ob"><b>PC #${Number(o.sub)}</b>${o.tier ? `<span class="pill ${o.tier >= 4 ? "g" : "c"}" style="margin-left:6px">T${o.tier} · ${fmt(o.hash, 0)} H</span>` : ""} <span class="mono" style="font-size:11px">× ${Number(o.qty)}</span></div>
         <div class="ob"><span class="price">${fmt(fromWei(o.price, projectMeta.dec), 4)}</span> 项目代币</div>
-        <div class="ob mono" style="font-size:10px;color:var(--faint)">卖家 ${shortAddr(o.seller)}</div>
+        <div class="ob mono" style="font-size:10px;color:var(--faint)">卖家 ${o.seller ? shortAddr(o.seller) : '—'}</div>
         <button class="btn sm" onclick="buyOrder(${o.oid})">购买</button>
       </div>`).join("")}</div>`;
   }
@@ -1814,7 +1814,7 @@ async function assetsTab(k, btn){
           const oc = Number(await market.orderCount());
           for (let i = 1; i <= oc; i++) {
             const o = await market.orders(i);
-            if (o.active && o.seller.toLowerCase() === walletAddr.toLowerCase()) rows.push({ p, oid: i, kind: Number(o.kind), sub: Number(o.sub), qty: Number(o.qty), price: o.price, dec: p.dec || 18 });
+            if (o.active && o.seller && o.seller.toLowerCase() === walletAddr.toLowerCase()) rows.push({ p, oid: i, kind: Number(o.kind), sub: Number(o.sub), qty: Number(o.qty), price: o.price, dec: p.dec || 18 });
             if (rows.length >= 50) break;
           }
         } catch(e){}
