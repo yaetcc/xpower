@@ -592,7 +592,7 @@ function renderStats(){
   el.innerHTML =
     '<div class="stat"><b style="color:var(--gold);font-size:18px">' + n + '</b><span style="color:var(--faint);font-size:11px">已发射代币</span></div>' +
     '<div class="stat"><b style="font-size:15px">' + fmt(pool,2) + ' OKB</b><span style="color:var(--faint);font-size:11px">池中储备</span></div>' +
-    '<div class="stat"><b style="font-size:15px">' + fmt(mcap,2) + ' OKB</b><span style="color:var(--faint);font-size:11px">流通市值</span></div>';
+    '<div class="stat"><b style="font-size:15px">' + fmtPrice(mcap) + ' OKB</b><span style="color:var(--faint);font-size:11px">流通市值</span></div>';
 }
 function renderCoinList(){
   const el = $("coinList");
@@ -616,7 +616,7 @@ function renderCoinList(){
       '</div>' +
       '<div class="lrow2">' +
       '<span>价格 <b>' + fmtPrice(p) + ' OKB</b></span>' +
-      '<span>市值 <b>' + fmt(mcap,2) + ' OKB</b></span>' +
+      '<span>市值 <b>' + fmtPrice(mcap) + ' OKB</b></span>' +
       '<span>已售 <b>' + fmt(pct,2) + '%</b></span>' +
       '</div>' +
       '<div class="lbar"><i style="width:' + Math.min(100, pct) + '%"></i></div>' +
@@ -633,6 +633,8 @@ async function openTrade(addr){
   curCoin = addr;
   if (!coinCache.some(c => c.addr === addr)) await loadLaunch();
   renderTrade();
+  const el = $("tradeSel");
+  if (el) try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch(e){}
 }
 function curveSVG(t){
   const W = 300, H = 110, W2 = W - 60, H2 = H - 40;
@@ -681,9 +683,9 @@ async function renderTrade(){
     '<div class="lbar"><i style="width:' + Math.min(100, pct) + '%"></i></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin:8px 0;font-size:12px;color:var(--dim)">' +
     '<span>总量 <b style="color:var(--fg)">' + fmt(Number(t.totalSupply)/1e18) + '</b></span>' +
-    '<span>已售 <b style="color:var(--fg)">' + fmt(Number(t.sold)/1e18,2) + ' (' + fmt(pct,1) + '%)</b></span>' +
+    '<span>已售 <b style="color:var(--fg)">' + fmt(Number(t.sold)/1e18,2) + ' (' + fmtPrice(pct) + '%)</b></span>' +
     '<span>池中 OKB <b style="color:var(--fg)">' + fmt(Number(t.virtualBase)/1e18,2) + '</b></span>' +
-    '<span>市值 <b style="color:var(--fg)">' + fmt(mcap,2) + ' OKB</b></span>' +
+    '<span>市值 <b style="color:var(--fg)">' + fmtPrice(mcap) + ' OKB</b></span>' +
     '<span>创建者份额 <b style="color:var(--fg)">' + fmt(Number(t.creatorShare)/1e18) + '</b></span>' +
     '<span>我的持仓 <b style="color:var(--fg)">' + fmt(myBal) + '</b></span>' +
     '</div>' +
