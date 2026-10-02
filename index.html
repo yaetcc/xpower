@@ -440,15 +440,6 @@ function withRPC(fn){
     attempt(0);
   });
 }
-function jsonRpc(method, params){
-  return withRPC(i => fetch(RPCS[i], {
-    method:"POST", headers:{"content-type":"application/json"},
-    body: JSON.stringify({ jsonrpc:"2.0", id:1, method, params })
-  }).then(r => r.json()).then(j => {
-    if (j.error) throw new Error(j.error.message || "RPC error");
-    return j.result;
-  }));
-}
 function getProvider(){ return withRPC(i => Promise.resolve(new ethers.JsonRpcProvider(RPCS[i], CHAIN_ID, { staticNetwork: true }))); }
 
 /* ---------- 通用工具 ---------- */
@@ -473,8 +464,13 @@ function toast(msg, type){
   setTimeout(() => t.remove(), type==="err" ? 6000 : 3500);
 }
 function copyText(t){
-  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast("已复制", "ok"));
-  else { const ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast("已复制", "ok"); }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(t).then(() => toast("已复制", "ok")).catch(() => toast("复制失败", "err"));
+  } else {
+    const ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast("已复制", "ok"); } catch(e){ toast("复制失败", "err"); }
+    ta.remove();
+  }
 }
 async function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
@@ -513,12 +509,6 @@ async function loadXprBal(){
     const bal = await tk.balanceOf(walletAddr);
     el.textContent = " · " + fmt(fromWei(bal), 2) + " XPR";
   } catch(e){ el.textContent = ""; }
-}
-async function copyAddr(){
-  try { await navigator.clipboard.writeText(walletAddr); toast("钱包地址已复制", "ok"); } catch(e){ toast("复制失败，请手动复制", "err"); }
-}
-async function copyText(t){
-  try { await navigator.clipboard.writeText(t); toast("已复制", "ok"); } catch(e){ toast("复制失败", "err"); }
 }
 $("walletBtn").onclick = connectWallet;
 
@@ -575,7 +565,10 @@ function calcSell(tok, t){
   return Number(out) / 1e18;
 }
 function copyAddr(addr){
-  if (navigator.clipboard) navigator.clipboard.writeText(addr).then(() => toast("已复制合约地址", "ok")).catch(() => toast("复制失败", "err"));
+  const isAddr = typeof addr === "string" && addr;
+  const a = isAddr ? addr : walletAddr;
+  if (!a) return;
+  if (navigator.clipboard) navigator.clipboard.writeText(a).then(() => toast(isAddr ? "已复制合约地址" : "钱包地址已复制", "ok")).catch(() => toast("复制失败", "err"));
   else toast("浏览器不支持复制", "err");
 }
 
@@ -786,6 +779,7 @@ async function doTrade(){
       const coinS = (await coinRead(curCoin)).connect(signer);
       qAdd("授权卖出", async () => { await coinS.approve(LAUNCHPAD, toWei(inp.value), { from: walletAddr }); return "已授权"; });
       qAdd("卖出 " + esc(curCoin.slice(0,6)) + "…", async () => {
+        if (qstate.steps.some(s => s.status === "err")) throw new Error("授权失败，已中止卖出");
         const tx = await lpS.sell(curCoin, toWei(inp.value), { from: walletAddr });
         await tx.wait();
         await loadLaunch(); if (curCoin) renderTrade();
@@ -937,8 +931,9 @@ async function qRun(){
   qShow(); qRender();
   for (let i = 0; i < qstate.steps.length; i++) {
     if (qstate.stopped) break;
-    qstate.idx = i;
     const s = qstate.steps[i];
+    if (s.status === "done") { qstate.idx = i; continue; }
+    qstate.idx = i;
     s.status = "run"; s.extra = ""; qRender();
     try {
       const r = await s.fn();
@@ -958,22 +953,6 @@ async function qRun(){
 $("qStop").onclick = () => { qstate.stopped = true; toast("已终止后续任务"); };
 $("qRetry").onclick = () => { const fails = qstate.steps.filter(s => s.status === "err"); qstate.steps = qstate.steps.map(s => s.status === "err" ? { ...s, status: "wait" } : s); qRun(); };
 $("qCollapse").onclick = () => $("qpanel").classList.add("hide");
-
-/* ---------- 链上调用封装（显式 from + 队列） ---------- */
-async function signTx(contract, method, args, opts={}){
-  if (!walletAddr) throw new Error("请先连接钱包");
-  if (!chainIdOk) throw new Error("请切换到 X Layer 网络");
-  const signer = await provider.getSigner();
-  const est = await contract[method].estimateGas(...args, { from: walletAddr, ...opts });
-  const tx = await contract[method](...args, { from: walletAddr, gasLimit: BigInt(Math.ceil(Number(est) * 1.4)), ...opts });
-  await tx.wait();
-  return tx.hash;
-}
-async function waitTx(hash){
-  const p = await getProvider();
-  await p.waitForTransaction(hash);
-  return hash;
-}
 
 /* ============================================================
    发射台 · 权重 + 一键部署
@@ -1198,8 +1177,8 @@ async function loadProject(boxAddr){
     const [xpwrAddr, marketAddr, creator] = await Promise.all([circuit.xpwr(), circuit.market(), circuit.creator()]);
     projectMeta = { box: boxAddr, token: payToken, total: Number(b1.total), sold: Number(b1.sold), price: b1.price, openMax: Number(maxOpen), boxCount: Number(boxCount), creator, parts: partsAddr, mining: miningAddr, market: marketAddr, circuit: circuitAddr, xpwr: xpwrAddr, dec: p ? (p.dec||18) : 18 };
     const tinfo = await tokenInfo(payToken);
-    projectMeta.sym = tinfo.sym || "项目代币";
-    projectMeta.tname = tinfo.name || "";
+    projectMeta.sym = esc(tinfo.sym || "项目代币");
+    projectMeta.tname = esc(tinfo.name || "");
     const tk = new ethers.Contract(payToken, ERC20_ABI, prov);
     let poolBal = "—", mined = "—";
     if (tk) {
@@ -1352,7 +1331,6 @@ async function renderAsm(b){
   try {
     const prov = await getProvider();
     const parts = new ethers.Contract(projectMeta.parts, ABI.XPowerParts, prov);
-    const bal = await parts.bal(1, walletAddr); // 每类部件 8 种，bal[partType][owner]
     let needUpg = false;
     try {
       const impl = await new ethers.Contract(projectMeta.circuit, ABI.XPowerCircuit, prov).implementation();
@@ -1848,7 +1826,6 @@ async function assetsTab(k, btn){
   body.innerHTML = `<div class="empty"><div class="big" style="line-height:1"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.6" style="opacity:.85"><path d="M7 2h10M7 22h10M9 2v4l4 6-4 6v4M15 2v4l-2 3"/></svg></div>读取中…</div>`;
   try {
     const prov = await getProvider();
-    const parts = new ethers.Contract(userProjects.length ? userProjects[0].parts : ethers.ZeroAddress, ABI.XPowerParts, prov);
     if (k === "parts") {
       // 汇总所有项目的部件
     let total = 0n; const byType = new Array(8).fill(0n);
@@ -1943,9 +1920,16 @@ async function assetsTab(k, btn){
 window.addEventListener("load", () => {
   // 动态加载 ethers
   if (typeof ethers === "undefined") {
+    const boot = () => { window._boot(); };
     const s = document.createElement("script");
     s.src = "https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js";
-    s.onload = () => { window._boot(); };
+    s.onload = boot;
+    s.onerror = () => {
+      const s2 = document.createElement("script");
+      s2.src = "https://unpkg.com/ethers@6.13.4/dist/ethers.umd.min.js";
+      s2.onload = boot;
+      document.head.appendChild(s2);
+    };
     document.head.appendChild(s);
   } else window._boot();
 });
